@@ -64,7 +64,7 @@ Live data quality metrics, enrollment tracking, and medical coding QC for ongoin
 
 ## Who we are
 
-Clindar is built by a clinical biometrician with 14+ years of hands-on experience across statistical programming, clinical data management, and CDISC standards delivery for CROs and pharma sponsors globally.
+Clindar is built by a clinical biometrician with 15+ years of hands-on experience across statistical programming, clinical data management, and CDISC standards delivery for CROs and pharma sponsors globally.
 
 Clindar exists because the tools available to small clinical data teams have never matched the complexity of the work they're asked to do — and enterprise-priced platforms were never designed with them in mind.
 
@@ -86,7 +86,6 @@ Alongside our software tools, Clindar provides hands-on biometrics consulting:
 - Clinical data management (DMP, EDC setup, edit checks, query management, DB lock)
 - Legacy dataset audit and CDISC remediation before agency inspections
 - Statistical programming support (SAS, R) for studies without in-house capacity
-- CDISC training workshops for CRO and biotech teams
 
 ---
 
