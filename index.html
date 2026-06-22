@@ -227,7 +227,8 @@
       <div class="contact__container">
         <h2 class="contact__heading">Request early access</h2>
         <p class="contact__subtext">The CDISC Validator is in development. Leave your details and we'll reach out when early access opens — expected later this year — or to discuss consulting support in the meantime.</p>
-        <form class="contact__form" id="contactForm" novalidate>
+        <form class="contact__form" id="contactForm" name="contact" netlify novalidate>
+          <input type="hidden" name="form-name" value="contact" />
           <div class="form-group">
             <label class="form-group__label" for="name">Name</label>
             <input class="form-group__input" type="text" id="name" name="name" placeholder="Your name" autocomplete="name" required />
