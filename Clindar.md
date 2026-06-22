@@ -28,7 +28,7 @@ A web-based CDISC conformance validator for SDTM and ADaM datasets. Built to sol
 
 ## Who we are
 
-Clindar is built on 14+ years of hands-on experience delivering CDISC-compliant submissions across global clinical trials — from first-in-human studies to pivotal Phase III packages.
+Clindar is built on 15+ years of hands-on experience delivering CDISC-compliant submissions across global clinical trials — from first-in-human studies to pivotal Phase III packages.
 
 ---
 
@@ -48,7 +48,6 @@ Alongside our software tools, Clindar provides hands-on biometrics consulting:
 - Clinical data management (DMP, EDC setup, edit checks, query management, DB lock)
 - Legacy dataset audit and CDISC remediation before agency inspections
 - Statistical programming support (SAS, R) for studies without in-house capacity
-- CDISC training workshops for CRO and biotech teams
 
 ---
 
@@ -136,7 +135,7 @@ Monospace:   JetBrains Mono or Fira Code — for dataset/code references
 - Large bold headline (48–64px), white
 - One-line supporting subheadline in slate (`#94A3B8`)
 - Two CTA buttons: primary (solid blue) + secondary (outlined white)
-- Optional: small trust badge or stat (e.g., "14+ years of CDISC expertise")
+- Optional: small trust badge or stat (e.g., "15+ years of CDISC expertise")
 - No stock photo heroes — prefer abstract data/grid visuals or pure typography
 
 ### Feature Cards
@@ -147,7 +146,7 @@ Monospace:   JetBrains Mono or Fira Code — for dataset/code references
 
 ### Stats / Social Proof Strip
 - Light slate or dark navy background
-- Large bold numbers (e.g., "14+ years", "SDTM + ADaM", "EU-hosted")
+- Large bold numbers (e.g., "15+ years", "SDTM + ADaM", "EU-hosted")
 - Inspired by Medidata's metric-driven sections and Appsilon's credibility blocks
 
 ### CTA Sections
