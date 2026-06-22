@@ -67,11 +67,22 @@ function initContactForm() {
     const allValid = fields.map(validateField).every(Boolean);
     if (!allValid) return;
 
-    // Replace form with success message (no real submission — static page)
-    form.querySelectorAll('input, textarea, button').forEach(el => el.setAttribute('disabled', ''));
-    const success = document.getElementById('formSuccess');
-    success.hidden = false;
-    success.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const data = new FormData(form);
+
+    fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(data).toString(),
+    })
+      .then(() => {
+        form.querySelectorAll('input, textarea, button').forEach(el => el.setAttribute('disabled', ''));
+        const success = document.getElementById('formSuccess');
+        success.hidden = false;
+        success.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      })
+      .catch(() => {
+        alert('Something went wrong. Please try again or email us directly.');
+      });
   });
 }
 
