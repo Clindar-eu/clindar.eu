@@ -901,13 +901,6 @@ body {
   margin-bottom: 32px;
 }
 
-@media (min-width: 640px) {
-  .services__list--solo .service-item {
-    grid-column: 1 / -1;
-    max-width: none;
-  }
-}
-
 /* Hero two-column layout at ≥900px */
 @media (min-width: 900px) {
   .hero {
