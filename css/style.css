@@ -901,6 +901,47 @@ body {
   margin-bottom: 32px;
 }
 
+/* ===== About: Founder block ===== */
+.about__founder {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.about__founder-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.about__founder-name {
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.2rem;
+}
+
+.about__founder-title {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #6b7280);
+  margin: 0;
+}
+
+.about__linkedin {
+  color: #0077b5;
+  display: inline-flex;
+  align-items: center;
+}
+
+.about__linkedin:hover {
+  opacity: 0.75;
+}
+
 /* Hero two-column layout at ≥900px */
 @media (min-width: 900px) {
   .hero {
