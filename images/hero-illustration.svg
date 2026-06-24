@@ -1,0 +1,204 @@
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f1f3d"/>
+      <stop offset="100%" style="stop-color:#1e3a6e"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a6e;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#0f2654;stop-opacity:0.9"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#60a5fa"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="480" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid lines -->
+  <g stroke="#ffffff" stroke-opacity="0.04" stroke-width="1">
+    <line x1="0" y1="80" x2="900" y2="80"/>
+    <line x1="0" y1="160" x2="900" y2="160"/>
+    <line x1="0" y1="240" x2="900" y2="240"/>
+    <line x1="0" y1="320" x2="900" y2="320"/>
+    <line x1="0" y1="400" x2="900" y2="400"/>
+    <line x1="150" y1="0" x2="150" y2="480"/>
+    <line x1="300" y1="0" x2="300" y2="480"/>
+    <line x1="450" y1="0" x2="450" y2="480"/>
+    <line x1="600" y1="0" x2="600" y2="480"/>
+    <line x1="750" y1="0" x2="750" y2="480"/>
+  </g>
+
+  <!-- Step label: STEP 1 -->
+  <text x="130" y="72" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="600" letter-spacing="2" opacity="0.9">STEP 1</text>
+
+  <!-- Card 1: Raw Data -->
+  <rect x="30" y="82" width="200" height="230" rx="12" fill="url(#cardGrad)" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.5" filter="url(#cardShadow)"/>
+  <!-- Card header -->
+  <rect x="30" y="82" width="200" height="38" rx="12" fill="#1d3461"/>
+  <rect x="30" y="106" width="200" height="14" fill="#1d3461"/>
+  <text x="130" y="106" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">Raw Trial Data</text>
+  <!-- Table header row -->
+  <rect x="42" y="128" width="176" height="18" rx="3" fill="#0f2654"/>
+  <text x="56" y="141" fill="#60a5fa" font-size="9" font-weight="700">SUBJECT</text>
+  <text x="106" y="141" fill="#60a5fa" font-size="9" font-weight="700">VISIT</text>
+  <text x="150" y="141" fill="#60a5fa" font-size="9" font-weight="700">PARAM</text>
+  <text x="197" y="141" fill="#60a5fa" font-size="9" font-weight="700">VALUE</text>
+  <!-- Data rows -->
+  <g fill="#a8c4e8" font-size="9">
+    <text x="56" y="159">001-001</text><text x="106" y="159">BL</text><text x="150" y="159">SBP</text><text x="197" y="159">122</text>
+    <text x="56" y="175">001-001</text><text x="106" y="175">W4</text><text x="150" y="175">SBP</text><text x="197" y="175">118</text>
+    <text x="56" y="191">001-002</text><text x="106" y="191">BL</text><text x="150" y="191">DBP</text><text x="197" y="191">81</text>
+    <text x="56" y="207">001-002</text><text x="106" y="207">W4</text><text x="150" y="207">DBP</text><text x="197" y="207">78</text>
+    <text x="56" y="223">001-003</text><text x="106" y="223">BL</text><text x="150" y="223">HGB</text><text x="197" y="223">14.2</text>
+    <text x="56" y="239">001-003</text><text x="106" y="239">W8</text><text x="150" y="239">HGB</text><text x="197" y="239">13.9</text>
+    <text x="56" y="255">001-004</text><text x="106" y="255">BL</text><text x="150" y="255">SBP</text><text x="197" y="255">135</text>
+  </g>
+  <!-- Row separators -->
+  <g stroke="#3b82f6" stroke-opacity="0.15" stroke-width="0.5">
+    <line x1="42" y1="165" x2="218" y2="165"/>
+    <line x1="42" y1="181" x2="218" y2="181"/>
+    <line x1="42" y1="197" x2="218" y2="197"/>
+    <line x1="42" y1="213" x2="218" y2="213"/>
+    <line x1="42" y1="229" x2="218" y2="229"/>
+    <line x1="42" y1="245" x2="218" y2="245"/>
+  </g>
+  <!-- More rows indicator -->
+  <text x="130" y="292" text-anchor="middle" fill="#60a5fa" font-size="10" opacity="0.7">· · · 1,840 rows</text>
+  <!-- File tag -->
+  <rect x="62" y="302" width="136" height="20" rx="10" fill="#0f2654" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="130" y="315" text-anchor="middle" fill="#93c5fd" font-size="9">study_vs_raw.csv</text>
+
+  <!-- Step label: STEP 2 -->
+  <text x="450" y="72" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="600" letter-spacing="2" opacity="0.9">STEP 2</text>
+
+  <!-- Card 2: CDISC Validator -->
+  <rect x="345" y="82" width="210" height="230" rx="12" fill="url(#cardGrad)" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.5" filter="url(#cardShadow)"/>
+  <rect x="345" y="82" width="210" height="38" rx="12" fill="#1d3461"/>
+  <rect x="345" y="106" width="210" height="14" fill="#1d3461"/>
+  <text x="450" y="106" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="600">CDISC Validator</text>
+
+  <!-- Conformance score ring -->
+  <circle cx="450" cy="175" r="42" fill="none" stroke="#0f2654" stroke-width="8"/>
+  <circle cx="450" cy="175" r="42" fill="none" stroke="#22c55e" stroke-width="8"
+    stroke-dasharray="221" stroke-dashoffset="31" stroke-linecap="round"
+    transform="rotate(-90 450 175)" filter="url(#glow)"/>
+  <text x="450" y="169" text-anchor="middle" fill="#ffffff" font-size="20" font-weight="700">86</text>
+  <text x="450" y="182" text-anchor="middle" fill="#93c5fd" font-size="9">SCORE</text>
+
+  <!-- Rule check list -->
+  <g font-size="10">
+    <!-- Pass -->
+    <circle cx="367" cy="237" r="6" fill="#22c55e" opacity="0.9"/>
+    <text x="354" y="233" fill="#22c55e" font-size="11" font-weight="700">✓</text>
+    <text x="378" y="241" fill="#a8c4e8">SDTM domain structure</text>
+    <!-- Pass -->
+    <circle cx="367" cy="256" r="6" fill="#22c55e" opacity="0.9"/>
+    <text x="354" y="252" fill="#22c55e" font-size="11" font-weight="700">✓</text>
+    <text x="378" y="260" fill="#a8c4e8">Controlled terminology</text>
+    <!-- Warning -->
+    <circle cx="367" cy="275" r="6" fill="#f59e0b" opacity="0.9"/>
+    <text x="354" y="271" fill="#f59e0b" font-size="11" font-weight="700">!</text>
+    <text x="378" y="279" fill="#a8c4e8">Missing VISITNUM values</text>
+    <!-- Error -->
+    <circle cx="367" cy="294" r="6" fill="#ef4444" opacity="0.9"/>
+    <text x="354" y="290" fill="#ef4444" font-size="11" font-weight="700">✗</text>
+    <text x="378" y="298" fill="#a8c4e8">USUBJID format invalid</text>
+  </g>
+
+  <!-- Step label: STEP 3 -->
+  <text x="775" y="72" text-anchor="middle" fill="#60a5fa" font-size="10" font-weight="600" letter-spacing="2" opacity="0.9">STEP 3</text>
+
+  <!-- Card 3: Submission Ready -->
+  <rect x="665" y="82" width="210" height="230" rx="12" fill="url(#cardGrad)" stroke="#22c55e" stroke-width="1.5" stroke-opacity="0.7" filter="url(#cardShadow)"/>
+  <rect x="665" y="82" width="210" height="38" rx="12" fill="#0d3320"/>
+  <rect x="665" y="106" width="210" height="14" fill="#0d3320"/>
+  <text x="770" y="106" text-anchor="middle" fill="#86efac" font-size="12" font-weight="600">Submission Package</text>
+
+  <!-- Document stack -->
+  <g>
+    <!-- SDTM -->
+    <rect x="690" y="132" width="150" height="36" rx="6" fill="#0f2654" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.6"/>
+    <rect x="690" y="132" width="4" height="36" rx="2" fill="#3b82f6"/>
+    <text x="703" y="146" fill="#93c5fd" font-size="10" font-weight="700">SDTM</text>
+    <text x="703" y="159" fill="#7aa3c8" font-size="9">28 datasets · Define-XML</text>
+    <circle cx="828" cy="150" r="8" fill="#22c55e"/>
+    <text x="828" y="154" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">✓</text>
+
+    <!-- ADaM -->
+    <rect x="690" y="176" width="150" height="36" rx="6" fill="#0f2654" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.6"/>
+    <rect x="690" y="176" width="4" height="36" rx="2" fill="#60a5fa"/>
+    <text x="703" y="190" fill="#93c5fd" font-size="10" font-weight="700">ADaM</text>
+    <text x="703" y="203" fill="#7aa3c8" font-size="9">12 datasets · Analysis specs</text>
+    <circle cx="828" cy="194" r="8" fill="#22c55e"/>
+    <text x="828" y="198" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">✓</text>
+
+    <!-- TLFs -->
+    <rect x="690" y="220" width="150" height="36" rx="6" fill="#0f2654" stroke="#3b82f6" stroke-width="1" stroke-opacity="0.6"/>
+    <rect x="690" y="220" width="4" height="36" rx="2" fill="#a78bfa"/>
+    <text x="703" y="234" fill="#93c5fd" font-size="10" font-weight="700">TLFs</text>
+    <text x="703" y="247" fill="#7aa3c8" font-size="9">Tables · Listings · Figures</text>
+    <circle cx="828" cy="238" r="8" fill="#22c55e"/>
+    <text x="828" y="242" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">✓</text>
+
+    <!-- Filing badges -->
+    <rect x="690" y="267" width="68" height="22" rx="11" fill="#1e3a6e" stroke="#3b82f6" stroke-width="1"/>
+    <text x="724" y="282" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="700">FDA</text>
+    <rect x="766" y="267" width="68" height="22" rx="11" fill="#1e3a6e" stroke="#3b82f6" stroke-width="1"/>
+    <text x="800" y="282" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="700">EMA</text>
+
+    <!-- Ready badge -->
+    <rect x="700" y="298" width="140" height="24" rx="12" fill="#052e16" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="770" y="314" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="700">SUBMISSION READY</text>
+  </g>
+
+  <!-- Arrow 1: Raw → Validator -->
+  <g filter="url(#glow)">
+    <defs>
+      <marker id="arrowHead1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+      </marker>
+    </defs>
+    <line x1="240" y1="197" x2="335" y2="197" stroke="url(#arrowGrad)" stroke-width="2.5" marker-end="url(#arrowHead1)" stroke-dasharray="6,3"/>
+  </g>
+  <!-- Arrow 2: Validator → Submission -->
+  <g>
+    <defs>
+      <marker id="arrowHead2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/>
+      </marker>
+    </defs>
+    <line x1="565" y1="197" x2="655" y2="197" stroke="#22c55e" stroke-width="2.5" marker-end="url(#arrowHead2)" stroke-dasharray="6,3" opacity="0.8"/>
+  </g>
+
+  <!-- Arrow labels -->
+  <text x="287" y="187" text-anchor="middle" fill="#60a5fa" font-size="9" opacity="0.8">validate</text>
+  <text x="610" y="187" text-anchor="middle" fill="#4ade80" font-size="9" opacity="0.8">package</text>
+
+  <!-- Bottom tagline -->
+  <text x="450" y="368" text-anchor="middle" fill="#93c5fd" font-size="13" font-weight="500" opacity="0.9">From raw trial data to FDA &amp; EMA submission — without the complexity.</text>
+
+  <!-- Bottom stats row -->
+  <g text-anchor="middle">
+    <rect x="180" y="390" width="160" height="48" rx="8" fill="#1e3a6e" fill-opacity="0.5" stroke="#3b82f6" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="260" y="413" fill="#ffffff" font-size="18" font-weight="700">SDTM</text>
+    <text x="260" y="430" fill="#93c5fd" font-size="10">Study Data Tabulation</text>
+
+    <rect x="370" y="390" width="160" height="48" rx="8" fill="#1e3a6e" fill-opacity="0.5" stroke="#3b82f6" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="450" y="413" fill="#ffffff" font-size="18" font-weight="700">ADaM</text>
+    <text x="450" y="430" fill="#93c5fd" font-size="10">Analysis Data Model</text>
+
+    <rect x="560" y="390" width="160" height="48" rx="8" fill="#1e3a6e" fill-opacity="0.5" stroke="#3b82f6" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="640" y="413" fill="#ffffff" font-size="18" font-weight="700">CDISC</text>
+    <text x="640" y="430" fill="#93c5fd" font-size="10">Always-current rules</text>
+  </g>
+</svg>
