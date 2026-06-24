@@ -1,0 +1,187 @@
+<svg viewBox="0 0 800 440" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f4ff"/>
+      <stop offset="100%" style="stop-color:#e8eef8"/>
+    </linearGradient>
+    <filter id="shadow2" x="-5%" y="-5%" width="115%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#94a3b8" flood-opacity="0.2"/>
+    </filter>
+    <filter id="shadow3">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#94a3b8" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="440" fill="url(#bg2)"/>
+
+  <!-- Browser chrome -->
+  <rect x="40" y="30" width="720" height="380" rx="12" fill="#ffffff" filter="url(#shadow2)"/>
+  <!-- Browser top bar -->
+  <rect x="40" y="30" width="720" height="40" rx="12" fill="#f1f5f9"/>
+  <rect x="40" y="56" width="720" height="14" fill="#f1f5f9"/>
+  <!-- Traffic lights -->
+  <circle cx="68" cy="50" r="6" fill="#ef4444"/>
+  <circle cx="88" cy="50" r="6" fill="#f59e0b"/>
+  <circle cx="108" cy="50" r="6" fill="#22c55e"/>
+  <!-- URL bar -->
+  <rect x="140" y="40" width="380" height="20" rx="10" fill="#e2e8f0"/>
+  <text x="155" y="54" fill="#64748b" font-size="10">app.clindar.eu/validate/study-0042</text>
+  <!-- App label -->
+  <text x="595" y="54" fill="#3b82f6" font-size="11" font-weight="700">Clindar</text>
+
+  <!-- Main content area -->
+  <!-- Left panel: file info + score -->
+  <rect x="52" y="82" width="190" height="316" rx="8" fill="#f8fafc"/>
+
+  <!-- Score circle -->
+  <circle cx="147" cy="148" r="50" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+  <!-- Score arc: 86% = 0.86 * 2π * 50 = 270 degrees of dasharray=314, offset=44 -->
+  <circle cx="147" cy="148" r="50" fill="none" stroke="#22c55e" stroke-width="10"
+    stroke-dasharray="270 44" stroke-linecap="round"
+    transform="rotate(-90 147 148)"/>
+  <text x="147" y="143" text-anchor="middle" fill="#0f172a" font-size="24" font-weight="700">86%</text>
+  <text x="147" y="160" text-anchor="middle" fill="#64748b" font-size="10">Conformance</text>
+
+  <!-- Score label -->
+  <text x="147" y="220" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="600">study-0042 / LBVS</text>
+  <text x="147" y="236" text-anchor="middle" fill="#64748b" font-size="10">SDTM v3.4 · 1,840 rows</text>
+
+  <!-- Error summary -->
+  <rect x="64" y="252" width="166" height="22" rx="4" fill="#fef2f2"/>
+  <rect x="64" y="252" width="3" height="22" rx="1" fill="#ef4444"/>
+  <text x="76" y="267" fill="#ef4444" font-size="11" font-weight="600">3 errors</text>
+  <rect x="64" y="280" width="166" height="22" rx="4" fill="#fffbeb"/>
+  <rect x="64" y="280" width="3" height="22" rx="1" fill="#f59e0b"/>
+  <text x="76" y="295" fill="#b45309" font-size="11" font-weight="600">7 warnings</text>
+  <rect x="64" y="308" width="166" height="22" rx="4" fill="#f0fdf4"/>
+  <rect x="64" y="308" width="3" height="22" rx="1" fill="#22c55e"/>
+  <text x="76" y="323" fill="#15803d" font-size="11" font-weight="600">142 rules passed</text>
+
+  <!-- Export button -->
+  <rect x="72" y="344" width="150" height="32" rx="8" fill="#1e3a6e"/>
+  <text x="147" y="364" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600">Export Report</text>
+
+  <!-- Right panel: dataset table -->
+  <rect x="254" y="82" width="494" height="316" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- Table toolbar -->
+  <rect x="254" y="82" width="494" height="36" rx="8" fill="#f8fafc"/>
+  <rect x="254" y="100" width="494" height="18" fill="#f8fafc"/>
+  <text x="272" y="105" fill="#0f172a" font-size="12" font-weight="700">LB — Laboratory Test Results</text>
+  <!-- Filter chips -->
+  <rect x="440" y="90" width="60" height="18" rx="9" fill="#fef2f2" stroke="#fecaca" stroke-width="1"/>
+  <text x="470" y="103" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="600">Errors only</text>
+  <rect x="508" y="90" width="60" height="18" rx="9" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="538" y="103" text-anchor="middle" fill="#64748b" font-size="9">All rows</text>
+  <!-- Search -->
+  <rect x="574" y="89" width="162" height="20" rx="10" fill="#f1f5f9"/>
+  <text x="591" y="103" fill="#94a3b8" font-size="9">Search columns...</text>
+
+  <!-- Table header -->
+  <rect x="254" y="118" width="494" height="22" fill="#f1f5f9"/>
+  <g fill="#64748b" font-size="9" font-weight="700">
+    <text x="268" y="133">USUBJID</text>
+    <text x="348" y="133">LBTESTCD</text>
+    <text x="418" y="133">LBORRES</text>
+    <text x="478" y="133">LBORRESU</text>
+    <text x="548" y="133">VISITNUM</text>
+    <text x="618" y="133">STATUS</text>
+    <text x="695" y="133">RULE ID</text>
+  </g>
+
+  <!-- Data rows -->
+  <!-- Row 1: error -->
+  <rect x="254" y="140" width="494" height="28" fill="#fef2f2"/>
+  <rect x="254" y="140" width="3" height="28" fill="#ef4444"/>
+  <g fill="#374151" font-size="10">
+    <text x="268" y="158" font-family="JetBrains Mono, monospace" fill="#ef4444" font-weight="600">001-001</text>
+    <text x="348" y="158">ALB</text>
+    <text x="418" y="158">4.2</text>
+    <text x="478" y="158">g/dL</text>
+    <text x="548" y="158">—</text>
+    <rect x="614" y="145" width="52" height="16" rx="8" fill="#fecaca"/>
+    <text x="640" y="157" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="600">ERROR</text>
+    <text x="695" y="158" fill="#ef4444" font-size="9">CG0015</text>
+  </g>
+
+  <!-- Row 2: pass -->
+  <g fill="#374151" font-size="10">
+    <text x="268" y="186" font-family="JetBrains Mono, monospace">001-001</text>
+    <text x="348" y="186">ALT</text>
+    <text x="418" y="186">28</text>
+    <text x="478" y="186">U/L</text>
+    <text x="548" y="186">1</text>
+    <rect x="614" y="173" width="52" height="16" rx="8" fill="#dcfce7"/>
+    <text x="640" y="185" text-anchor="middle" fill="#15803d" font-size="9" font-weight="600">PASS</text>
+    <text x="695" y="186" fill="#94a3b8" font-size="9">—</text>
+  </g>
+  <line x1="254" y1="196" x2="748" y2="196" stroke="#f1f5f9" stroke-width="1"/>
+
+  <!-- Row 3: warning -->
+  <rect x="254" y="196" width="494" height="28" fill="#fffbeb"/>
+  <rect x="254" y="196" width="3" height="28" fill="#f59e0b"/>
+  <g fill="#374151" font-size="10">
+    <text x="268" y="214" font-family="JetBrains Mono, monospace">001-002</text>
+    <text x="348" y="214">GLUC</text>
+    <text x="418" y="214">92</text>
+    <text x="478" y="214">mg/dL</text>
+    <text x="548" y="214">1</text>
+    <rect x="610" y="201" width="58" height="16" rx="8" fill="#fef3c7"/>
+    <text x="639" y="213" text-anchor="middle" fill="#b45309" font-size="9" font-weight="600">WARNING</text>
+    <text x="695" y="214" fill="#b45309" font-size="9">CT0082</text>
+  </g>
+
+  <!-- Row 4: pass -->
+  <g fill="#374151" font-size="10">
+    <text x="268" y="242" font-family="JetBrains Mono, monospace">001-002</text>
+    <text x="348" y="242">HGB</text>
+    <text x="418" y="242">13.9</text>
+    <text x="478" y="242">g/dL</text>
+    <text x="548" y="242">2</text>
+    <rect x="614" y="229" width="52" height="16" rx="8" fill="#dcfce7"/>
+    <text x="640" y="241" text-anchor="middle" fill="#15803d" font-size="9" font-weight="600">PASS</text>
+    <text x="695" y="242" fill="#94a3b8" font-size="9">—</text>
+  </g>
+  <line x1="254" y1="252" x2="748" y2="252" stroke="#f1f5f9" stroke-width="1"/>
+
+  <!-- Row 5: error -->
+  <rect x="254" y="252" width="494" height="28" fill="#fef2f2"/>
+  <rect x="254" y="252" width="3" height="28" fill="#ef4444"/>
+  <g fill="#374151" font-size="10">
+    <text x="268" y="270" font-family="JetBrains Mono, monospace" fill="#ef4444" font-weight="600">001-003</text>
+    <text x="348" y="270">CREAT</text>
+    <text x="418" y="270">0.9</text>
+    <text x="478" y="270">mg/dL</text>
+    <text x="548" y="270">—</text>
+    <rect x="614" y="257" width="52" height="16" rx="8" fill="#fecaca"/>
+    <text x="640" y="269" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="600">ERROR</text>
+    <text x="695" y="270" fill="#ef4444" font-size="9">CG0015</text>
+  </g>
+
+  <!-- Row 6: pass -->
+  <g fill="#374151" font-size="10">
+    <text x="268" y="298" font-family="JetBrains Mono, monospace">001-003</text>
+    <text x="348" y="298">BILI</text>
+    <text x="418" y="298">0.7</text>
+    <text x="478" y="298">mg/dL</text>
+    <text x="548" y="298">2</text>
+    <rect x="614" y="285" width="52" height="16" rx="8" fill="#dcfce7"/>
+    <text x="640" y="297" text-anchor="middle" fill="#15803d" font-size="9" font-weight="600">PASS</text>
+    <text x="695" y="298" fill="#94a3b8" font-size="9">—</text>
+  </g>
+  <line x1="254" y1="308" x2="748" y2="308" stroke="#f1f5f9" stroke-width="1"/>
+
+  <!-- Expanded error explanation panel -->
+  <rect x="254" y="310" width="494" height="76" rx="0" fill="#fff5f5" stroke="#fecaca" stroke-width="1"/>
+  <rect x="254" y="310" width="494" height="1" fill="#fecaca"/>
+  <!-- Error icon -->
+  <circle cx="274" cy="332" r="10" fill="#fecaca"/>
+  <text x="274" y="337" text-anchor="middle" fill="#ef4444" font-size="12" font-weight="700">!</text>
+  <text x="295" y="330" fill="#0f172a" font-size="11" font-weight="700">CG0015 — Required variable VISITNUM is null</text>
+  <text x="295" y="345" fill="#64748b" font-size="10">VISITNUM must be populated for all records in the LB domain. Found 14 rows</text>
+  <text x="295" y="358" fill="#64748b" font-size="10">with missing values. Per SDTM IG 3.4, section 7.2 (Timing Variables).</text>
+  <!-- Fix suggestion -->
+  <rect x="295" y="366" width="220" height="16" rx="8" fill="#dbeafe"/>
+  <text x="405" y="378" text-anchor="middle" fill="#1d4ed8" font-size="9" font-weight="600">Suggested fix: Populate from VISIT variable mapping</text>
+</svg>
