@@ -3,3 +3,6 @@ Clindar_Deck.pptx
 Clindar_Deck_2026.pdf
 dist/
 node_modules/
+
+# Local Netlify folder
+.netlify

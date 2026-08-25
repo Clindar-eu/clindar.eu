@@ -12,3 +12,63 @@
 [build.environment]
   # The scanner's package.json requires node >= 20.
   NODE_VERSION = "22"
+
+# ---------------------------------------------------------------------------
+# Headers.
+#
+# Netlify header rules are global across builds and cannot be scoped per branch
+# or deploy context, but they can be scoped by path, which is what separates the
+# marketing site from the scanner below. Rules are listed general to specific;
+# a later matching rule overrides an earlier one for the same header name.
+# ---------------------------------------------------------------------------
+
+# Baseline for the marketing site. It loads Google Fonts and Plausible, so its
+# policy is necessarily looser than the scanner's — hence two policies, not one.
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://plausible.io; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://plausible.io"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+
+# The scanner. Nothing leaves the browser: no third-party origin is reachable
+# from this page, and with connect-src 'none' the Define-XML physically cannot
+# be sent anywhere. This is a product claim, not a hardening detail.
+[[headers]]
+  for = "/scanner/*"
+
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "require-corp"
+    Cross-Origin-Resource-Policy = "same-origin"
+
+# HTML is re-fetched every time so a deploy is visible immediately.
+[[headers]]
+  for = "/index.html"
+
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/scanner/index.html"
+
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Vite emits content-hashed filenames, so these are safe to pin forever.
+[[headers]]
+  for = "/scanner/assets/*"
+
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
