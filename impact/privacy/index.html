@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scanner privacy — what leaves your browser, and how to check — Clindar</title>
+  <meta name="description" content="What the SDTMIG v4.0 Impact Scanner reads, what it sends, and how to verify both from your own devtools in about two minutes." />
+  <link rel="canonical" href="https://clindar.eu/impact/privacy/" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/impact.css" />
+  <!-- No analytics on this page. A page that explains what a site does not
+       send should not itself be sending anything. -->
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="navbar__container">
+      <a href="/" class="navbar__logo">Clindar</a>
+      <nav class="navbar__nav" aria-label="Main navigation">
+        <a href="/impact/" class="navbar__link">Impact Scanner</a>
+        <a href="/#services" class="navbar__link">Services</a>
+        <a href="/#contact" class="navbar__link">Contact</a>
+      </nav>
+      <a href="/scanner/" class="btn btn--primary navbar__cta">Open the scanner</a>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="impact-pagehead">
+      <div class="impact-pagehead__container">
+        <h1 class="impact-pagehead__title">What leaves your browser, and how to check</h1>
+        <p class="impact-pagehead__lede">
+          This page is written for whoever has to sign off on running a tool
+          against study metadata. It states what the SDTMIG v4.0 Impact Scanner
+          reads, what it transmits, and how to confirm both from your own
+          devtools without trusting a word of it.
+        </p>
+        <p class="impact-pagehead__meta">Applies to <span class="impact-code">clindar.eu/scanner</span>. Last reviewed 25 August 2026.</p>
+      </div>
+    </section>
+
+    <section class="impact-section">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">The short version</h2>
+        <p class="impact-prose">
+          The Define-XML you drop in is parsed by JavaScript running in your
+          browser tab. It is not uploaded, not proxied, not queued, and not
+          logged. It is never sent anywhere, because the page it runs on is
+          served with a policy that leaves it nowhere to send it.
+        </p>
+        <p class="impact-prose">
+          One thing can leave, and only if you type it: an email address, after
+          your score is on screen, if you want the written report. It goes to
+          <span class="impact-code">/.netlify/functions/subscribe</span> on this
+          domain. Nothing about your scan goes with it.
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section impact-section--slate">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">What a Define-XML contains, and what the scanner reads</h2>
+        <p class="impact-prose">
+          A Define-XML is study metadata, not study data: the datasets in a
+          submission, the variables in each, their types, lengths and roles, the
+          codelists and their terms, value-level metadata, comments, computation
+          methods and origins. It normally carries the study identifier and
+          protocol name, and it can carry free text that someone wrote by hand —
+          comments and method descriptions are the usual places.
+        </p>
+        <p class="impact-prose">
+          It does not contain subject data. No USUBJIDs, no visits, no results,
+          no adverse events. Whether your organisation nonetheless treats a
+          Define as confidential is your call, and a reasonable one: it
+          describes the shape of a trial.
+        </p>
+        <p class="impact-prose">
+          The scanner reads the dataset and variable definitions, codelists,
+          value-level metadata and the standards declarations. It reads them to
+          decide which SDTMIG v4.0 changes apply to your study. Everything it
+          reads stays in the tab's memory and is gone when you close it —
+          nothing is written to
+          <span class="impact-code">localStorage</span>,
+          <span class="impact-code">sessionStorage</span>, IndexedDB, or a
+          cookie. Reload the page and the scan is gone with it.
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">What the scanner page is permitted to contact</h2>
+        <p class="impact-prose">
+          Every response under <span class="impact-code">/scanner/</span> carries
+          this Content-Security-Policy header:
+        </p>
+        <p class="impact-prose">
+          <span class="impact-code">default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'</span>
+        </p>
+        <p class="impact-prose">
+          <strong>connect-src 'self'</strong> is the directive that matters.
+          It means the page's JavaScript can open a network connection to
+          exactly one origin — this one — and to no other. Not to an analytics
+          service, not to a font host, not to a CDN, not to an error reporter,
+          not to us by any other route. A browser enforces this; it is not a
+          setting the page can opt out of.
+        </p>
+        <p class="impact-prose">
+          The same page also loads no third-party script of any kind. The
+          scanner's own JavaScript, its stylesheet and the email capture widget
+          all come from this domain. Our marketing pages do use
+          <a href="https://plausible.io/privacy" rel="noopener">Plausible</a>,
+          a cookieless analytics service — the scanner does not, and neither
+          does this page.
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section impact-section--slate">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">Verify it yourself, in about two minutes</h2>
+        <ol class="impact-steps">
+          <li>
+            Open <span class="impact-code">clindar.eu/scanner</span> and open
+            devtools before you do anything else
+            (<span class="impact-code">F12</span>, or
+            <span class="impact-code">Cmd-Option-I</span> on a Mac).
+          </li>
+          <li>
+            <strong>Read the policy.</strong> In the Network tab, reload, click
+            the first document request, and look at the response headers. You
+            should see <span class="impact-code">content-security-policy</span>
+            with <span class="impact-code">connect-src 'self'</span> in it. It
+            is also repeated in a <span class="impact-code">&lt;meta&gt;</span>
+            tag in the page source, which the browser enforces as well.
+          </li>
+          <li>
+            <strong>Watch the scan.</strong> Leave the Network tab open, tick
+            "Preserve log", and drop in a Define-XML. Nothing new appears. No
+            XHR, no fetch, no beacon, no image request with your data hidden in
+            the query string. The score arrives with no network activity at all,
+            because the work happened in the tab.
+          </li>
+          <li>
+            <strong>Try to break it.</strong> If you want to be certain the
+            policy is doing the work rather than the page merely behaving, open
+            the Console and run
+            <span class="impact-code">fetch('https://example.com')</span>. The
+            browser refuses it and says why. That refusal is what stands between
+            your Define-XML and the internet.
+          </li>
+          <li>
+            <strong>Watch the one request that does happen.</strong> If you ask
+            for the written report, a single
+            <span class="impact-code">POST</span> to
+            <span class="impact-code">/.netlify/functions/subscribe</span>
+            appears. Click it and read the request payload: it is
+            <span class="impact-code">{"email":"…"}</span> and nothing else — no
+            file name, no study identifier, no score, no rule ids.
+          </li>
+        </ol>
+        <p class="impact-prose">
+          If any of that does not match what you see, we would rather hear about
+          it than not: <a href="mailto:info@clindar.eu">info@clindar.eu</a>.
+          The configuration is what would be wrong, and we would fix it.
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">The email address, if you give us one</h2>
+        <dl class="impact-facts">
+          <div>
+            <dt>What is collected</dt>
+            <dd>The email address you type, and the hour it arrived. Nothing else is recorded: no IP address, no browser, no referrer, no scan result.</dd>
+          </div>
+          <div>
+            <dt>Why</dt>
+            <dd>To send you the written report you asked for, and to tell you when the rules catalogue changes in a way that affects your studies.</dd>
+          </div>
+          <div>
+            <dt>Legal basis</dt>
+            <dd>Consent, GDPR Article 6(1)(a). You gave it by typing the address and asking for the report. Withdraw it at any time with the unsubscribe link on every email, or by writing to us.</dd>
+          </div>
+          <div>
+            <dt>Who else sees it</dt>
+            <dd>Our email service provider, as a processor, for delivery only. It is never sold, never shared for anyone else's marketing, and never joined to anything you scanned — we do not have that to join it to.</dd>
+          </div>
+          <div>
+            <dt>How long</dt>
+            <dd>Until you unsubscribe, or after two years without a single opened email, whichever comes first.</dd>
+          </div>
+          <div>
+            <dt>Your rights</dt>
+            <dd>Access, rectification, erasure, restriction, portability and objection, under GDPR Articles 15–21. Write to <a href="mailto:info@clindar.eu">info@clindar.eu</a> and we will action it. You may also complain to your national supervisory authority.</dd>
+          </div>
+          <div>
+            <dt>Rate limiting</dt>
+            <dd>The endpoint counts recent submissions per caller for an hour, keyed by a salted hash of the IP address held in memory only. The address itself is never written down and the salt is discarded when the process restarts.</dd>
+          </div>
+        </dl>
+        <p class="impact-prose">
+          There are no cookies on the scanner. Not analytics cookies, not
+          preference cookies, not "essential" cookies. There is no consent
+          banner because there is nothing to consent to.
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section impact-section--slate">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">If a browser is still the wrong place</h2>
+        <p class="impact-prose">
+          Some organisations will not run study metadata through a web page
+          whatever the headers say, and that position is defensible. The same
+          engine — the same rules catalogue, the same scoring — runs as a
+          command-line tool inside your own network, with no browser and no
+          network access at all. Write to us and we will get you a build.
+        </p>
+        <p>
+          <a class="btn btn--secondary" href="/impact/">Back to the scanner overview</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer__container">
+      <div class="footer__col footer__col--brand">
+        <span class="footer__logo">Clindar</span>
+        <p class="footer__tagline">Clinical data, submission-ready.</p>
+        <p class="footer__desc">CDISC validation tools and biometrics consulting for CROs and small biotech.</p>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Product</h4>
+        <nav class="footer__nav" aria-label="Product links">
+          <a href="/scanner/" class="footer__link">SDTMIG v4.0 Impact Scanner</a>
+          <a href="/#features" class="footer__link">CDISC Validator</a>
+        </nav>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Company</h4>
+        <nav class="footer__nav" aria-label="Company links">
+          <a href="/#services" class="footer__link">Services</a>
+          <a href="/#about" class="footer__link">About</a>
+          <a href="/#contact" class="footer__link">Contact</a>
+        </nav>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Legal &amp; Data</h4>
+        <p class="footer__legal-note">EU-hosted. The scanner uploads nothing: Define-XML is read in your browser.</p>
+        <a href="mailto:info@clindar.eu" class="footer__link">info@clindar.eu</a>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p class="footer__copy">&copy; 2026 Clindar. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
