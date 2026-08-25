@@ -26,16 +26,21 @@ const SITE_ORIGIN = 'https://clindar.eu';
 // What gets published, and what does not.
 //
 // Published: everything a reader needs to check our work — the classification,
-// the prose, and the sources.
+// the prose, the sources, and the effort model.
+//
+// The effort numbers are published WITH the three assumptions that decide what
+// they mean, because base-plus-per-finding hours read cold are a price list
+// rather than evidence: setup is charged once and not per finding, a rule in an
+// effortGroup does not charge setup again for a workstream another rule in the
+// group already paid for, and programme-scoped hours land once per organisation
+// rather than once per study. Anyone reconstructing a total from these pages
+// should be able to get the same number the scanner does.
 //
 // Not published: `evidence` and `select`, which are the engine's templates and
-// predicates rather than statements about the standard; the `effort` numbers,
-// which are the estimating model — the scanner reports effort per study, where
-// they come with the assumptions that make them mean something, and a per-rule
-// table of base and per-finding hours read out of context is a price list, not
-// evidence; and `serviceHook`, which is a pitch. These pages are here to be
-// checked, and a reader working through what a rule costs them should reach
-// the sources without an offer in the way.
+// predicates rather than statements about the standard; and `serviceHook`,
+// which is a pitch. These pages are here to be checked, and a reader working
+// through what a rule costs them should reach the sources without an offer in
+// the way.
 
 const CATEGORY_LABELS = {
   structural: 'Structural',
@@ -202,6 +207,107 @@ ${body}
 </body>
 </html>
 `;
+}
+
+/** "2 hours", "1 hour", "0.25 hours" — never "2.00". */
+function hours(value) {
+  const n = Number(value);
+  const text = Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
+  return `${text} ${n === 1 ? 'hour' : 'hours'}`;
+}
+
+/**
+ * The effort model, with the assumptions that decide what the numbers mean.
+ *
+ * Published because a reader who can see the rule and the sources should be
+ * able to see what we think it costs and argue with it. Every line here says
+ * how the number is applied, not just what it is: setup once rather than per
+ * finding, waived where another rule in the same workstream already charged it,
+ * and programme work landing once per organisation rather than once per study.
+ */
+function renderEffort(rule, catalogue) {
+  const effort = rule.effort;
+  if (!effort) return '';
+
+  const programme = effort.scope === 'programme';
+  const rows = [];
+
+  const free = effort.baseHours === 0 && effort.perFindingHours === 0;
+
+  if (free) {
+    rows.push([
+      'Estimated hours',
+      'None. This rule reports something worth knowing rather than work to do, so it adds nothing to the estimate.',
+    ]);
+  } else {
+    if (effort.baseHours > 0) {
+      rows.push([
+        effort.perFindingHours > 0 ? 'Setup' : 'Fixed',
+        `${escapeHtml(hours(effort.baseHours))} <span class="fact-note">Charged once ${
+          programme ? 'per organisation' : 'per study'
+        } if the rule fires at all, however many times it fires.</span>`,
+      ]);
+    }
+    if (effort.perFindingHours > 0) {
+      rows.push([
+        'Per finding',
+        `${escapeHtml(hours(effort.perFindingHours))} <span class="fact-note">Added for every dataset or variable the rule fires on.</span>`,
+      ]);
+    }
+    if (effort.maxHours !== undefined) {
+      rows.push([
+        'Capped at',
+        `${escapeHtml(hours(effort.maxHours))} <span class="fact-note">A ceiling, so an unusually large study does not produce an unusable number.</span>`,
+      ]);
+    }
+  }
+
+  // Whose budget nothing lands in is not a useful row.
+  if (!free) rows.push([
+    'Budget',
+    programme
+      ? 'Programme <span class="fact-note">Work that comes with adopting v4.0 at all. It happens once however many studies convert, and is never multiplied across a portfolio.</span>'
+      : 'Study <span class="fact-note">Work caused by this study’s own metadata, and incurred again for every study that carries it.</span>',
+  ]);
+
+  // Without this, two rules in one workstream read as two setups.
+  const group = rule.effortGroup
+    ? catalogue.rules
+        .filter((r) => r.effortGroup === rule.effortGroup && r.id !== rule.id)
+        .map((r) => r.id)
+    : [];
+
+  if (group.length) {
+    rows.push([
+      'Shared setup',
+      `With ${group.map((id) => `<a href="${rulePath(id)}">${escapeHtml(id)}</a>`).join(', ')}
+        <span class="fact-note">These describe one piece of work approached from different
+        directions, so the setup above is charged once between them rather than by each. Per-finding
+        hours still apply to each, because those scale with what is actually converted.</span>`,
+    ]);
+  }
+
+  const body = rows
+    .map(
+      ([term, value]) => `          <div>
+            <dt>${term}</dt>
+            <dd>${value}</dd>
+          </div>`,
+    )
+    .join('\n');
+
+  // "What it costs to fix", not "What it costs": the severity row a few lines
+  // above says severity is what it costs to MISS this, and two headings a
+  // screen apart should not both read "what it costs".
+  return `        <h2 class="impact-section__title">What it costs to fix</h2>
+        <p class="impact-prose">
+          Planning numbers, not a quotation. They are what this rule contributes
+          to the range the scanner reports for a study, and they assume someone
+          who knows the datasets is doing the work.
+        </p>
+        <dl class="impact-facts">
+${body}
+        </dl>`;
 }
 
 function chip(kind, value, text) {
@@ -394,6 +500,8 @@ ${factRows}
 
         <h2 class="impact-section__title">What to do about it</h2>
         <p class="impact-prose">${escapeHtml(rule.remediation)}</p>
+
+${renderEffort(rule, catalogue)}
 
 ${detectabilityNote}
       </div>
