@@ -5,7 +5,14 @@
 // install that happens is the scanner's own, inside vendor/scanner.
 
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,6 +39,98 @@ function run(cmd, cwd) {
 
 function step(label) {
   console.log(`\n== ${label}`);
+}
+
+// ---------------------------------------------------------------------------
+// The scanner's Content-Security-Policy.
+//
+// A <meta http-equiv> policy and a response-header policy are BOTH enforced,
+// and they compose by intersection: a request has to satisfy each of them. So a
+// policy shipped inside the scanner's own index.html can never be relaxed by
+// netlify.toml, only tightened — and keeping the same policy in two repos
+// invites them to drift apart with nothing checking.
+//
+// netlify.toml is therefore the one place the policy is written. The built
+// index.html gets a meta tag generated from it: identical by construction, so
+// the intersection is exactly the header, and the page still carries its own
+// copy for anyone who saves it or serves it from somewhere that sends no
+// headers at all.
+// ---------------------------------------------------------------------------
+
+const CSP_META_RE = new RegExp(
+  '[ \\t]*<meta\\s[^>]*http-equiv=["\']Content-Security-Policy["\'][^>]*>\\s*\\n',
+  'gi',
+);
+
+/** The CSP netlify.toml applies to /scanner/*. */
+function scannerCspFromNetlifyToml() {
+  const toml = readFileSync(join(root, 'netlify.toml'), 'utf8');
+
+  // Enough TOML for this file's shape: split on the [[headers]] table markers
+  // and take the block whose `for` is the scanner path.
+  const block = toml
+    .split(/^\[\[headers\]\]\s*$/m)
+    .slice(1)
+    .find((b) => /^\s*for\s*=\s*"\/scanner\/\*"\s*$/m.test(b));
+  if (!block) {
+    throw new Error('netlify.toml has no [[headers]] block for "/scanner/*"');
+  }
+
+  const match = block.match(/^\s*Content-Security-Policy\s*=\s*"([^"]+)"\s*$/m);
+  if (!match) {
+    throw new Error(
+      'the "/scanner/*" headers block in netlify.toml sets no Content-Security-Policy',
+    );
+  }
+
+  const policy = match[1].trim();
+  if (/[<>"]/.test(policy)) {
+    throw new Error(`scanner CSP holds characters unsafe to inline: ${policy}`);
+  }
+  if (!/(^|;)\s*connect-src\s/.test(policy)) {
+    // connect-src is the directive the privacy claim rests on. Its absence
+    // would silently fall back to default-src, which nobody would have meant.
+    throw new Error(`scanner CSP sets no connect-src: ${policy}`);
+  }
+  return policy;
+}
+
+/** Replace whatever CSP the scanner build shipped with the one from netlify.toml. */
+function applyScannerCsp(htmlPath, policy) {
+  const html = readFileSync(htmlPath, 'utf8');
+
+  const shipped = html.match(CSP_META_RE) ?? [];
+  if (shipped.length > 0) {
+    // Not fatal — what deploys is still the policy below — but it means the
+    // scanner has started authoring one again, and the two would drift.
+    console.warn(
+      `  ! the scanner build shipped ${shipped.length} CSP meta tag(s); replacing them.\n` +
+        '    Remove it upstream: netlify.toml owns this policy.',
+    );
+  }
+
+  const stripped = html.replace(CSP_META_RE, '');
+  const meta =
+    '    <meta\n' +
+    '      http-equiv="Content-Security-Policy"\n' +
+    `      content="${policy}"\n` +
+    '    />\n';
+
+  // Ahead of the first script or stylesheet, so the policy is in force before
+  // the parser reaches anything it governs.
+  const anchor = stripped.search(/[ \t]*<(script|link)\b/i);
+  if (anchor === -1) {
+    throw new Error(`no <script> or <link> in ${htmlPath} to place the CSP before`);
+  }
+  const out = stripped.slice(0, anchor) + meta + stripped.slice(anchor);
+
+  // The whole point of generating it: what ships is what netlify.toml says.
+  if ((out.match(CSP_META_RE) ?? []).length !== 1 || !out.includes(`content="${policy}"`)) {
+    throw new Error(`failed to apply the scanner CSP to ${htmlPath}`);
+  }
+
+  writeFileSync(htmlPath, out);
+  console.log(`  ${policy}`);
 }
 
 step('clean');
@@ -61,5 +160,8 @@ if (!existsSync(join(scannerDist, 'index.html'))) {
   throw new Error(`scanner build produced no index.html at ${scannerDist}`);
 }
 cpSync(scannerDist, join(dist, 'scanner'), { recursive: true });
+
+step('scanner CSP from netlify.toml');
+applyScannerCsp(join(dist, 'scanner', 'index.html'), scannerCspFromNetlifyToml());
 
 console.log('\nbuild complete -> dist/');
