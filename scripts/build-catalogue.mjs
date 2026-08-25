@@ -26,14 +26,16 @@ const SITE_ORIGIN = 'https://clindar.eu';
 // What gets published, and what does not.
 //
 // Published: everything a reader needs to check our work — the classification,
-// the prose, the sources, and the service we would sell against it.
+// the prose, and the sources.
 //
 // Not published: `evidence` and `select`, which are the engine's templates and
-// predicates rather than statements about the standard; and the `effort`
-// numbers, which are the estimating model. The scanner reports effort per
-// study, where it comes with the assumptions that make it mean something; a
-// per-rule table of base and per-finding hours read out of context is a price
-// list, not evidence.
+// predicates rather than statements about the standard; the `effort` numbers,
+// which are the estimating model — the scanner reports effort per study, where
+// they come with the assumptions that make them mean something, and a per-rule
+// table of base and per-finding hours read out of context is a price list, not
+// evidence; and `serviceHook`, which is a pitch. These pages are here to be
+// checked, and a reader working through what a rule costs them should reach
+// the sources without an offer in the way.
 
 const CATEGORY_LABELS = {
   structural: 'Structural',
@@ -370,16 +372,6 @@ ${related
         </ul>`
     : '';
 
-  const serviceBlock = rule.serviceHook
-    ? `    <section class="impact-section impact-section--slate">
-      <div class="impact-section__container impact-section__container--narrow">
-        <h2 class="impact-section__title">If you would rather not do this yourself</h2>
-        <p class="impact-prose">${escapeHtml(rule.serviceHook)}</p>
-        <p><a class="btn btn--secondary" href="/#contact">Talk to us about it</a></p>
-      </div>
-    </section>`
-    : '';
-
   const body = `    <section class="impact-pagehead">
       <div class="impact-pagehead__container">
         <p class="rule-eyebrow">${escapeHtml(rule.id)} · ${escapeHtml(label(CATEGORY_LABELS, rule.category))}</p>
@@ -421,8 +413,6 @@ ${references}
 ${relatedBlock}
       </div>
     </section>
-
-${serviceBlock}
 
     <section class="impact-cta">
       <div class="impact-cta__container">
