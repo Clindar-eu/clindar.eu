@@ -1,0 +1,309 @@
+/* ===== SDTMIG v4.0 Impact Scanner — landing and privacy pages =====
+ *
+ * Loaded after style.css and using its tokens. Only what those two pages need
+ * that the homepage does not: the drop zone, the prose column, and the
+ * verification steps.
+ */
+
+/* ===== Above the fold ===== */
+/* One question, then the way in. Everything else is below the fold on purpose:
+   the score is free, so there is nothing here to ask the visitor for. */
+.impact-hero {
+  background: var(--color-bg-dark);
+  color: var(--color-text-white);
+  padding: 96px 1.5rem 80px;
+}
+
+.impact-hero__container {
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.impact-hero__title {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 2.5rem;
+  text-wrap: balance;
+}
+
+.impact-hero__note {
+  margin-top: 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+/* ===== Drop zone ===== */
+/* A link, not a file input. The scanner one screen away does the reading, and
+   handing a Define-XML between two pages would mean putting it somewhere —
+   which is exactly what this product promises never to do. */
+.dropzone {
+  display: block;
+  padding: 2.5rem 1.5rem;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none;
+  color: var(--color-text-white);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.dropzone:hover,
+.dropzone:focus-visible {
+  /* Literal, not --color-accent-light: that token is the pale hover fill for
+     light backgrounds and would read as near-white against the navy here. */
+  border-color: #7fb2f5;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dropzone__mark {
+  display: block;
+  margin: 0 auto 0.75rem;
+  width: 32px;
+  height: 32px;
+  color: #7fb2f5;
+}
+
+.dropzone__mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.dropzone__label {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.dropzone__hint {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+/* ===== Sections ===== */
+.impact-section {
+  padding: var(--section-padding-y) 1.5rem;
+  background: var(--color-bg-white);
+}
+
+.impact-section--slate {
+  background: var(--color-bg-slate);
+}
+
+.impact-section__container {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.impact-section__container--narrow {
+  max-width: 720px;
+}
+
+.impact-section__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.5rem;
+  color: var(--color-text-primary);
+}
+
+.impact-prose {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+  max-width: 68ch;
+}
+
+.impact-prose:last-of-type {
+  margin-bottom: 1.75rem;
+}
+
+.impact-prose strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.impact-prose code,
+.impact-code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-bg-slate);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.impact-section--slate .impact-prose code,
+.impact-section--slate .impact-code {
+  background: var(--color-bg-white);
+}
+
+/* ===== Card grid ===== */
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.impact-card {
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  padding: 1.75rem;
+}
+
+.impact-card__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-primary);
+}
+
+.impact-card__body {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+}
+
+/* ===== Verification steps (privacy page) ===== */
+.impact-steps {
+  counter-reset: step;
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+}
+
+.impact-steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 0 0 1.25rem 3rem;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  max-width: 68ch;
+}
+
+.impact-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 4px;
+  background: var(--color-accent);
+  color: var(--color-text-white);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.impact-steps strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* ===== Definition list: what is collected ===== */
+.impact-facts {
+  margin: 0 0 1.75rem;
+  border-top: 1px solid var(--color-border);
+  max-width: 68ch;
+}
+
+.impact-facts div {
+  display: grid;
+  grid-template-columns: minmax(140px, 12rem) 1fr;
+  gap: 1rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.impact-facts dt {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+}
+
+.impact-facts dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 600px) {
+  .impact-facts div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+/* ===== Header block on the privacy page ===== */
+.impact-pagehead {
+  background: var(--color-bg-dark);
+  color: var(--color-text-white);
+  padding: 72px 1.5rem 64px;
+}
+
+.impact-pagehead__container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.impact-pagehead__title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.impact-pagehead__lede {
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  max-width: 60ch;
+}
+
+.impact-pagehead__meta {
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+/* ===== Mid-page CTA ===== */
+.impact-cta {
+  background: var(--color-bg-dark);
+  color: var(--color-text-white);
+  padding: 72px 1.5rem;
+  text-align: center;
+}
+
+.impact-cta__container {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.impact-cta__title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.75rem;
+}
+
+.impact-cta__body {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+  margin-bottom: 1.75rem;
+}

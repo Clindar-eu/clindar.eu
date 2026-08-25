@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SDTMIG v4.0 Impact Scanner — Clindar</title>
+  <meta name="description" content="Drop in a Define-XML and see which of your studies break when you move to SDTMIG v4.0, which datasets and variables are affected, and roughly what it costs to fix. Runs in your browser; the file is never uploaded." />
+  <link rel="canonical" href="https://clindar.eu/impact/" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/impact.css" />
+  <!-- Privacy-friendly analytics by Plausible. Not loaded on /scanner/, which
+       runs no third-party script at all, and not on the privacy page. -->
+  <script async src="https://plausible.io/js/pa-WhKMe5ICB0v2ZRIIDNduc.js"></script>
+  <script src="/js/plausible-init.js"></script>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="navbar__container">
+      <a href="/" class="navbar__logo">Clindar</a>
+      <nav class="navbar__nav" aria-label="Main navigation">
+        <a href="#what-it-reads" class="navbar__link">What it reads</a>
+        <a href="#privacy" class="navbar__link">Privacy</a>
+        <a href="/#services" class="navbar__link">Services</a>
+      </nav>
+      <a href="/scanner/" class="btn btn--primary navbar__cta">Open the scanner</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Above the fold: the question, then the way in. Nothing else, and no
+         sign-up — the score is free and asking first would be the wrong trade. -->
+    <section class="impact-hero">
+      <div class="impact-hero__container">
+        <h1 class="impact-hero__title">Which of your studies break when you move to SDTMIG&nbsp;v4.0?</h1>
+
+        <a class="dropzone" href="/scanner/" data-analytics="impact-dropzone">
+          <span class="dropzone__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 16V4" />
+              <path d="m7 9 5-5 5 5" />
+              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+            </svg>
+          </span>
+          <strong class="dropzone__label">Drop in your Define-XML</strong>
+          <span class="dropzone__hint">Opens the scanner. One study or forty, in seconds.</span>
+        </a>
+
+        <p class="impact-hero__note">
+          The file is read in your browser and never uploaded. No account, no
+          sign-up, no cost to see the number.
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section" id="what-it-reads">
+      <div class="impact-section__container">
+        <h2 class="impact-section__title">What it reads, and what it tells you</h2>
+        <div class="impact-grid">
+          <article class="impact-card">
+            <h3 class="impact-card__title">Define-XML metadata only</h3>
+            <p class="impact-card__body">
+              Datasets, variables, codelists, value-level metadata. It never
+              needs the data itself — no SDTM datasets, no listings, no
+              subject-level anything.
+            </p>
+          </article>
+          <article class="impact-card">
+            <h3 class="impact-card__title">Study by study, across a portfolio</h3>
+            <p class="impact-card__body">
+              Drop in every Define you have. You get the count of affected
+              studies, the specific datasets and variables behind each finding,
+              and which study to start with.
+            </p>
+          </article>
+          <article class="impact-card">
+            <h3 class="impact-card__title">An effort estimate you can argue with</h3>
+            <p class="impact-card__body">
+              Indicative hours per study, plus the programme-level work that is
+              done once rather than per study. Traceable to the rule that
+              produced it, so you can push back on any line of it.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="impact-section impact-section--slate" id="privacy">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">The file does not leave your browser</h2>
+        <p class="impact-prose">
+          This is enforced, not promised. The scanner page is served with a
+          Content-Security-Policy that permits exactly one connection target:
+          this domain. No analytics script, no font host, no error reporter, no
+          CDN. There is no origin it could send a Define-XML to, and no code on
+          the page that tries.
+        </p>
+        <p class="impact-prose">
+          The only request the page ever makes is the email address you type in,
+          after your score is on screen, if you want the written report. That
+          one goes to a path on this domain and nowhere else.
+        </p>
+        <p class="impact-prose">
+          You do not have to take our word for any of it. Open devtools, watch
+          the network panel while you scan, and read the response headers.
+        </p>
+        <p>
+          <a class="btn btn--secondary" href="/impact/privacy/">How to verify it in two minutes</a>
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">Every number traces to a published rule</h2>
+        <p class="impact-prose">
+          The findings come from a versioned rules catalogue: what SDTMIG v4.0
+          changes, how it is detected in Define-XML, what it means for your
+          study, and what to do about it. Each rule is marked confirmed against
+          the published standard or flagged as draft, and each carries how
+          conclusively a Define alone can detect it — because some changes
+          cannot be settled from metadata, and saying so is more useful than a
+          confident wrong answer.
+        </p>
+        <p class="impact-prose">
+          The scanner shows the catalogue version and the standard it targets on
+          every report it produces.
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-cta">
+      <div class="impact-cta__container">
+        <h2 class="impact-cta__title">Find out in the next five minutes</h2>
+        <p class="impact-cta__body">
+          Drop in one Define-XML. If nothing in your portfolio is affected, you
+          have spent five minutes and learned something worth knowing.
+        </p>
+        <a href="/scanner/" class="btn btn--primary">Open the scanner</a>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer__container">
+      <div class="footer__col footer__col--brand">
+        <span class="footer__logo">Clindar</span>
+        <p class="footer__tagline">Clinical data, submission-ready.</p>
+        <p class="footer__desc">CDISC validation tools and biometrics consulting for CROs and small biotech.</p>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Product</h4>
+        <nav class="footer__nav" aria-label="Product links">
+          <a href="/scanner/" class="footer__link">SDTMIG v4.0 Impact Scanner</a>
+          <a href="/#features" class="footer__link">CDISC Validator</a>
+        </nav>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Company</h4>
+        <nav class="footer__nav" aria-label="Company links">
+          <a href="/#services" class="footer__link">Services</a>
+          <a href="/#about" class="footer__link">About</a>
+          <a href="/#contact" class="footer__link">Contact</a>
+        </nav>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Legal &amp; Data</h4>
+        <p class="footer__legal-note">EU-hosted. The scanner uploads nothing: Define-XML is read in your browser.</p>
+        <a href="/impact/privacy/" class="footer__link">Scanner privacy</a>
+        <a href="mailto:info@clindar.eu" class="footer__link">info@clindar.eu</a>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p class="footer__copy">&copy; 2026 Clindar. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

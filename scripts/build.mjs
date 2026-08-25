@@ -27,7 +27,7 @@ const SCANNER_BASE = '/scanner/';
 // Allowlist, not a denylist: the repo root also holds CLAUDE.md, Clindar.md and
 // the brief in docs/, none of which should ever reach the public directory.
 // Add new public files here as they are created.
-const PUBLIC_ENTRIES = ['index.html', 'css', 'js', 'images'];
+const PUBLIC_ENTRIES = ['index.html', 'css', 'js', 'images', 'impact'];
 
 // Copied into dist/scanner/ rather than served from the site root: the widget
 // only ever runs on the scanner page, and it must be same-origin with it.
