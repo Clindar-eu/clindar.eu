@@ -281,6 +281,155 @@
   color: var(--color-text-muted);
 }
 
+/* ===== Rules catalogue =====
+ *
+ * Severity and basis colours are the scanner's own (--crit, --major, --minor,
+ * --info in its stylesheet), repeated as literals here so a rule page and the
+ * report that cites it grade the same finding the same colour.
+ */
+
+.rule-table__scroll {
+  overflow-x: auto;
+}
+
+.rule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  min-width: 640px;
+}
+
+.rule-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  padding: 0 0.75rem 0.625rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rule-table td {
+  padding: 0.75rem 0.75rem 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+  color: var(--color-text-secondary);
+}
+
+.rule-table a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.rule-table a:hover,
+.rule-table a:focus-visible {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.rule-table__id {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.rule-table__id a {
+  color: var(--color-accent);
+}
+
+.rule-table__detect {
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+/* ===== Chips ===== */
+.chip {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid currentColor;
+}
+
+.chip--severity-critical { color: #8f1d1d; }
+.chip--severity-major    { color: #9a3412; }
+.chip--severity-minor    { color: #8a5a00; }
+.chip--severity-info     { color: #475569; }
+
+.chip--confidence-confirmed          { color: #0f766e; }
+.chip--confidence-draft              { color: #8a5a00; }
+.chip--confidence-needs-verification { color: #9a3412; }
+
+/* ===== Rule page ===== */
+.rule-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7fb2f5;
+  margin-bottom: 0.75rem;
+}
+
+.rule-back {
+  color: var(--color-text-muted);
+}
+
+.fact-note {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.rule-refs {
+  margin: 0 0 1.75rem;
+  padding-left: 1.25rem;
+  max-width: 68ch;
+}
+
+.rule-refs li {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.625rem;
+  padding-left: 0.25rem;
+}
+
+.rule-related {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 68ch;
+}
+
+.rule-related li {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rule-related a {
+  display: block;
+  padding: 0.75rem 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.rule-related a:hover,
+.rule-related a:focus-visible {
+  color: var(--color-accent);
+}
+
+.rule-related__id {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--color-accent);
+  margin-right: 0.5rem;
+}
+
 /* ===== Mid-page CTA ===== */
 .impact-cta {
   background: var(--color-bg-dark);

@@ -16,6 +16,8 @@ import {
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { buildCatalogue } from './build-catalogue.mjs';
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
 const scanner = join(root, 'vendor', 'scanner');
@@ -23,6 +25,10 @@ const scanner = join(root, 'vendor', 'scanner');
 // The scanner is served from a path, not the root, so its assets must be built
 // with a matching base or every emitted URL 404s under /scanner/.
 const SCANNER_BASE = '/scanner/';
+
+// Canonical origin, for the sitemap. The pages carry their own <link rel=
+// "canonical"> with the same value.
+const SITE_ORIGIN = 'https://clindar.eu';
 
 // Allowlist, not a denylist: the repo root also holds CLAUDE.md, Clindar.md and
 // the brief in docs/, none of which should ever reach the public directory.
@@ -160,6 +166,24 @@ function applyScannerCsp(htmlPath, policy) {
   console.log(`  ${policy}`);
 }
 
+/** Write sitemap.xml and the robots.txt that points at it. */
+function writeSitemap(paths) {
+  const urls = paths
+    .map((path) => `  <url><loc>${SITE_ORIGIN}${path}</loc></url>`)
+    .join('\n');
+
+  writeFileSync(
+    join(dist, 'sitemap.xml'),
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+  );
+  writeFileSync(
+    join(dist, 'robots.txt'),
+    `User-agent: *\nAllow: /\n\nSitemap: ${SITE_ORIGIN}/sitemap.xml\n`,
+  );
+  console.log(`  ${paths.length} urls`);
+}
+
 step('clean');
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
@@ -203,5 +227,16 @@ linkWidget(join(dist, 'scanner', 'index.html'));
 
 step('scanner CSP from netlify.toml');
 applyScannerCsp(join(dist, 'scanner', 'index.html'), scannerCspFromNetlifyToml());
+
+// Read-only with respect to the submodule, and downstream of the scanner build
+// so it renders the same catalogue the scanner was compiled against.
+step('catalogue pages from the submodule');
+const catalogue = buildCatalogue({ scannerDir: scanner, distDir: dist });
+console.log(`  ${catalogue.ruleCount} rules from catalogue ${catalogue.version}`);
+
+// The catalogue is only an SEO surface if it can be found. Fifty pages behind
+// one index link is exactly the shape a crawler is slowest to walk on its own.
+step('sitemap');
+writeSitemap(['/', '/impact/', '/impact/privacy/', '/scanner/', ...catalogue.paths]);
 
 console.log('\nbuild complete -> dist/');
