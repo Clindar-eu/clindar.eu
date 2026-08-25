@@ -1,0 +1,3 @@
+[submodule "vendor/scanner"]
+	path = vendor/scanner
+	url = https://github.com/Aderskus/clindar-impact.git

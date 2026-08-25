@@ -1,0 +1,14 @@
+# Clindar.eu — Netlify configuration.
+#
+# The scanner is built from the vendor/scanner submodule and copied into the
+# publish directory under scanner/. It is deliberately NOT a proxy rewrite to a
+# second site: Netlify does not apply custom headers to proxied content, which
+# would move the scanner's CSP out of this repo's control.
+
+[build]
+  command = "node scripts/build.mjs"
+  publish = "dist"
+
+[build.environment]
+  # The scanner's package.json requires node >= 20.
+  NODE_VERSION = "22"
