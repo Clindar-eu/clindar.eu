@@ -13,6 +13,10 @@
   # The scanner's package.json requires node >= 20.
   NODE_VERSION = "22"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # ---------------------------------------------------------------------------
 # Headers.
 #
@@ -36,14 +40,18 @@
     Permissions-Policy = "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Cross-Origin-Opener-Policy = "same-origin"
 
-# The scanner. Nothing leaves the browser: no third-party origin is reachable
-# from this page, and with connect-src 'none' the Define-XML physically cannot
-# be sent anywhere. This is a product claim, not a hardening detail.
+# The scanner. No third-party origin is reachable from this page at all: with
+# connect-src 'self', the only endpoint its JavaScript can address is a path on
+# this domain, and the only path that accepts anything is the subscribe
+# function, which takes an email address. The Define-XML has nowhere to go.
+# That is a product claim, not a hardening detail — 'self' is exactly as far as
+# this may ever be relaxed, and this string is also the source the build copies
+# into the scanner's own <meta> tag (see scripts/build.mjs).
 [[headers]]
   for = "/scanner/*"
 
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
@@ -72,3 +80,19 @@
 
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# The capture widget is copied in from widget/ and is not content-hashed, so it
+# has to be revalidated or a fix to it would sit in caches behind the HTML.
+[[headers]]
+  for = "/scanner/scanner-capture.*"
+
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# The subscribe endpoint. Nothing about a POST of an email address should ever
+# be held anywhere between the browser and the function.
+[[headers]]
+  for = "/.netlify/functions/*"
+
+  [headers.values]
+    Cache-Control = "no-store"

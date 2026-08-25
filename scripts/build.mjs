@@ -29,6 +29,10 @@ const SCANNER_BASE = '/scanner/';
 // Add new public files here as they are created.
 const PUBLIC_ENTRIES = ['index.html', 'css', 'js', 'images'];
 
+// Copied into dist/scanner/ rather than served from the site root: the widget
+// only ever runs on the scanner page, and it must be same-origin with it.
+const WIDGET_ENTRIES = ['scanner-capture.js', 'scanner-capture.css'];
+
 // Run through a shell: npm is a .cmd shim on Windows, which recent Node
 // refuses to spawn directly. Every command below is a fixed string with no
 // interpolated input, so there is nothing here for a shell to mis-parse.
@@ -61,6 +65,29 @@ const CSP_META_RE = new RegExp(
   '[ \\t]*<meta\\s[^>]*http-equiv=["\']Content-Security-Policy["\'][^>]*>\\s*\\n',
   'gi',
 );
+
+/**
+ * Load the capture widget from the scanner's HTML.
+ *
+ * Injected here rather than committed upstream because the URLs are
+ * /scanner/-absolute: they are a fact about how this site serves the build, not
+ * about the scanner. The scanner's own dev server simply has no widget, which
+ * is the right answer for it. What upstream does need is the container element
+ * and the scored event — see docs/scanner-integration.md.
+ */
+function linkWidget(htmlPath) {
+  const html = readFileSync(htmlPath, 'utf8');
+  if (html.includes('scanner-capture.js')) return;
+
+  const tags =
+    '    <link rel="stylesheet" href="/scanner/scanner-capture.css" />\n' +
+    '    <script src="/scanner/scanner-capture.js" defer></script>\n';
+
+  const closing = html.match(/([ \t]*)<\/head>/i);
+  if (!closing) throw new Error(`no </head> in ${htmlPath}`);
+  writeFileSync(htmlPath, html.replace(closing[0], tags + closing[0]));
+  console.log('  linked from scanner/index.html');
+}
 
 /** The CSP netlify.toml applies to /scanner/*. */
 function scannerCspFromNetlifyToml() {
@@ -160,6 +187,19 @@ if (!existsSync(join(scannerDist, 'index.html'))) {
   throw new Error(`scanner build produced no index.html at ${scannerDist}`);
 }
 cpSync(scannerDist, join(dist, 'scanner'), { recursive: true });
+
+// The capture widget lives in this repo, not in the scanner: it is the site's
+// funnel, it changes on the site's schedule, and keeping it here is what lets
+// the scanner stay a thing that only reads files. It is copied in beside the
+// scanner's own assets so it loads under script-src 'self'.
+step('copy capture widget into dist/scanner');
+for (const entry of WIDGET_ENTRIES) {
+  const from = join(root, 'widget', entry);
+  if (!existsSync(from)) throw new Error(`missing widget file: ${entry}`);
+  cpSync(from, join(dist, 'scanner', entry));
+  console.log(`  ${entry}`);
+}
+linkWidget(join(dist, 'scanner', 'index.html'));
 
 step('scanner CSP from netlify.toml');
 applyScannerCsp(join(dist, 'scanner', 'index.html'), scannerCspFromNetlifyToml());

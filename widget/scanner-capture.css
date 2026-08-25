@@ -1,0 +1,141 @@
+/*
+ * Clindar email capture widget.
+ *
+ * Reads the host page's tokens where they exist (--panel, --line, --ink,
+ * --muted, --accent — the scanner defines all five, in light and dark) and
+ * falls back to the site palette when they do not. One stylesheet, both pages,
+ * no theme detection.
+ */
+
+.clindar-capture {
+  --cc-panel: var(--panel, #ffffff);
+  --cc-line: var(--line, #e5e7eb);
+  --cc-ink: var(--ink, #111827);
+  --cc-muted: var(--muted, #6b7280);
+  --cc-accent: var(--accent, #1d72e8);
+  --cc-error: #b42318;
+
+  margin: 32px 0 0;
+  padding: 24px;
+  background: var(--cc-panel);
+  border: 1px solid var(--cc-line);
+  border-left: 3px solid var(--cc-accent);
+  border-radius: 8px;
+  color: var(--cc-ink);
+  font-family: inherit;
+  max-width: 68ch;
+}
+
+.clindar-capture[hidden] {
+  display: none;
+}
+
+.clindar-capture__heading {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  text-transform: none;
+  color: var(--cc-ink);
+}
+
+.clindar-capture__body {
+  margin: 0 0 16px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--cc-muted);
+}
+
+.clindar-capture__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cc-ink);
+}
+
+.clindar-capture__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clindar-capture__input {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--cc-ink);
+  background: var(--cc-panel);
+  border: 1px solid var(--cc-line);
+  border-radius: 6px;
+}
+
+.clindar-capture__input:focus-visible,
+.clindar-capture__submit:focus-visible,
+.clindar-capture__link:focus-visible {
+  outline: 2px solid var(--cc-accent);
+  outline-offset: 2px;
+}
+
+.clindar-capture__input[aria-invalid='true'] {
+  border-color: var(--cc-error);
+}
+
+.clindar-capture__submit {
+  flex: 0 0 auto;
+  padding: 10px 20px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--cc-accent);
+  border: 1px solid var(--cc-accent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.clindar-capture__submit:hover {
+  opacity: 0.9;
+}
+
+.clindar-capture__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Off-screen rather than display:none — a bot reading the DOM should still
+   find something fillable, and no human ever sees or tabs to it. */
+.clindar-capture__trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.clindar-capture__error {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  color: var(--cc-error);
+}
+
+.clindar-capture__note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cc-muted);
+}
+
+.clindar-capture__link {
+  color: var(--cc-accent);
+}
+
+@media (max-width: 480px) {
+  .clindar-capture__submit {
+    flex: 1 1 100%;
+  }
+}
