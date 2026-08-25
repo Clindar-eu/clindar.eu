@@ -15,6 +15,7 @@
        runs no third-party script at all, and not on the privacy page. -->
   <script async src="https://plausible.io/js/pa-WhKMe5ICB0v2ZRIIDNduc.js"></script>
   <script src="/js/plausible-init.js"></script>
+  <script src="/js/impact-analytics.js" defer></script>
 </head>
 <body>
 
@@ -26,7 +27,7 @@
         <a href="#privacy" class="navbar__link">Privacy</a>
         <a href="/#services" class="navbar__link">Services</a>
       </nav>
-      <a href="/scanner/" class="btn btn--primary navbar__cta">Open the scanner</a>
+      <a href="/scanner/" class="btn btn--primary navbar__cta" data-plausible-event="Scanner opened" data-plausible-from="nav">Open the scanner</a>
     </div>
   </header>
 
@@ -38,7 +39,7 @@
       <div class="impact-hero__container">
         <h1 class="impact-hero__title">Which of your studies break when you move to SDTMIG&nbsp;v4.0?</h1>
 
-        <a class="dropzone" href="/scanner/" data-analytics="impact-dropzone">
+        <a class="dropzone" href="/scanner/" data-plausible-event="Scanner opened" data-plausible-from="dropzone">
           <span class="dropzone__mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 16V4" />
@@ -109,7 +110,7 @@
           the network panel while you scan, and read the response headers.
         </p>
         <p>
-          <a class="btn btn--secondary" href="/impact/privacy/">How to verify it in two minutes</a>
+          <a class="btn btn--secondary" href="/impact/privacy/" data-plausible-event="Privacy checked" data-plausible-from="privacy-section">How to verify it in two minutes</a>
         </p>
       </div>
     </section>
@@ -140,7 +141,7 @@
           Drop in one Define-XML. If nothing in your portfolio is affected, you
           have spent five minutes and learned something worth knowing.
         </p>
-        <a href="/scanner/" class="btn btn--primary">Open the scanner</a>
+        <a href="/scanner/" class="btn btn--primary" data-plausible-event="Scanner opened" data-plausible-from="footer-cta">Open the scanner</a>
       </div>
     </section>
 
@@ -156,7 +157,7 @@
       <div class="footer__col">
         <h4 class="footer__col-heading">Product</h4>
         <nav class="footer__nav" aria-label="Product links">
-          <a href="/scanner/" class="footer__link">SDTMIG v4.0 Impact Scanner</a>
+          <a href="/scanner/" class="footer__link" data-plausible-event="Scanner opened" data-plausible-from="footer-nav">SDTMIG v4.0 Impact Scanner</a>
           <a href="/#features" class="footer__link">CDISC Validator</a>
         </nav>
       </div>
