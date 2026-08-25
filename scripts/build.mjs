@@ -10,6 +10,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -166,6 +167,70 @@ function applyScannerCsp(htmlPath, policy) {
   console.log(`  ${policy}`);
 }
 
+/**
+ * Fail the build if a secret from the environment reached the publish directory.
+ *
+ * On Netlify's free plan an environment variable cannot be scoped to Functions,
+ * so ESP_API_KEY is present in the build environment on every build even though
+ * only the subscribe function has any use for it. Nothing here reads it — the
+ * only `process.env` in this repo is inside that function, at request time —
+ * but "nothing reads it today" is a fact about the current code, and this
+ * directory is served to the public. So check the artefact rather than trust
+ * the code: whatever a future edit does, a secret that lands in dist/ stops the
+ * deploy instead of shipping.
+ *
+ * Values are matched, never printed. A failure names the variable and the file.
+ */
+function assertNoSecretsInPublish() {
+  const SECRET_NAME = /(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)S?$/i;
+  // Below this, a value is more likely to collide with ordinary page text than
+  // to be a credential worth protecting.
+  const MIN_SECRET_LENGTH = 8;
+
+  const secrets = Object.entries(process.env).filter(
+    ([name, value]) =>
+      SECRET_NAME.test(name) && typeof value === 'string' && value.length >= MIN_SECRET_LENGTH,
+  );
+
+  if (secrets.length === 0) {
+    console.log('  no secrets in the build environment to check for');
+    return;
+  }
+
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else files.push(path);
+    }
+  };
+  walk(dist);
+
+  // Bytes, not text: a secret that arrived through a font or an image is still
+  // a published secret, and this way there is no encoding to be wrong about.
+  for (const file of files) {
+    const contents = readFileSync(file);
+    for (const [name] of secrets) {
+      if (contents.includes(Buffer.from(process.env[name], 'utf8'))) {
+        throw new Error(
+          `${name} reached the publish directory: ${file}\n` +
+            'Nothing in the build may read a secret. Remove the reference; do not redeploy.',
+        );
+      }
+    }
+    if (contents.includes(Buffer.from('ESP_API_KEY', 'utf8'))) {
+      // The name is not the secret, but nothing published has a reason to
+      // mention it, and a page that names it is usually one edit from the value.
+      console.warn(`  ! ${file} names ESP_API_KEY. Check why.`);
+    }
+  }
+
+  console.log(
+    `  ${files.length} files checked against ${secrets.length} secret(s) in the environment`,
+  );
+}
+
 /** Write sitemap.xml and the robots.txt that points at it. */
 function writeSitemap(paths) {
   const urls = paths
@@ -238,5 +303,9 @@ console.log(`  ${catalogue.ruleCount} rules from catalogue ${catalogue.version}`
 // one index link is exactly the shape a crawler is slowest to walk on its own.
 step('sitemap');
 writeSitemap(['/', '/impact/', '/impact/privacy/', '/scanner/', ...catalogue.paths]);
+
+// Last, over the finished artefact: everything above has had its turn to write.
+step('secret scan');
+assertNoSecretsInPublish();
 
 console.log('\nbuild complete -> dist/');
