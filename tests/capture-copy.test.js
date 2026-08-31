@@ -153,6 +153,31 @@ test('the landing page scopes its no-request claim to scanning', () => {
   );
 });
 
+test('the privacy page forbids script, and carries none', () => {
+  // Two halves of one claim, checked together because either alone is
+  // reassuring and wrong. The page tells a DPO that no script runs here; the
+  // header is what makes that enforced rather than a description of today's
+  // markup, and the markup is what makes the header honest rather than
+  // aspirational.
+  const toml = read('netlify.toml');
+  const block = toml.slice(toml.indexOf('for = "/impact/privacy/*"'));
+  const policy = block.match(/Content-Security-Policy = "([^"]+)"/);
+  assert.ok(policy, 'the privacy page has no headers block of its own');
+
+  assert.match(policy[1], /script-src 'none'/, "the privacy page's script-src widened");
+  assert.ok(
+    !/connect-src[^;]*plausible/.test(policy[1]),
+    'connect-src permits plausible again on a page that can run no script',
+  );
+  assert.ok(
+    !/script-src[^;]*plausible/.test(policy[1]),
+    'script-src permits plausible again on the page that says it loads none',
+  );
+
+  assert.ok(!/<script/i.test(PRIVACY), 'the privacy page grew a script the header forbids');
+  assert.ok(!/\son[a-z]+\s*=/i.test(PRIVACY), 'the privacy page grew an inline event handler');
+});
+
 test('the widget is still the only thing in the site that can post the address', () => {
   // If a second sender ever appears, the pages above describe a payload that is
   // no longer the only one, and this test is the thing that says so.

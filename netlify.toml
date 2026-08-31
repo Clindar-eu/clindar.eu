@@ -57,14 +57,31 @@
 # permits it. That is a deliberate split, not an oversight: this is the only
 # page whose argument its own network activity can contradict.
 #
-# What this does NOT tighten, and could: script-src still permits plausible.io
-# here, inherited from the baseline, though this page loads no analytics and
-# says so. Narrowing it is a separate decision from self-hosting the fonts.
+# script-src is 'none', not 'self', and that is the honest value rather than a
+# cautious one. The page has no <script> element, no form, and no inline
+# handler; it is prose and a table. 'self' would permit a script this page does
+# not have, on the one page that tells a DPO no script runs here — so the
+# directive would be describing a possibility rather than the page.
+#
+# The practical effect is that adding a script here fails loudly in the console
+# instead of quietly making that sentence false. If this page ever genuinely
+# needs script, that is a product decision about the page's central claim, and
+# it should cost an edit to this block and a rewrite of the copy — not go
+# unnoticed because the policy left room.
+#
+# connect-src drops plausible.io for the same reason: that entry existed only so
+# Plausible's script could report, and with script-src 'none' nothing can call
+# it. Leaving it would advertise a permission the page cannot use, which is the
+# kind of detail a reader auditing these headers is entitled to read as sloppy.
+#
+# form-action stays 'self' rather than 'none'. There is no form here today, but
+# unlike script it is not part of what the page claims, and 'self' is the right
+# default for one arriving later.
 [[headers]]
   for = "/impact/privacy/*"
 
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://plausible.io; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://plausible.io"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'"
 
 # The scanner. With connect-src 'self' the browser blocks every third-party
 # destination, so the only endpoint this page's JavaScript can address is a path
