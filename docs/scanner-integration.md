@@ -106,9 +106,13 @@ One field: the email address typed into the input. That is the entire body.
 
 No file name, no study identifier, no score, no band, no rule ids, no referrer,
 no cookie, no storage of any kind, and no third-party script anywhere near it.
-The scanner runs under `connect-src 'self'`, so this same-origin path is the
-only endpoint its JavaScript can reach at all — and this is the only request it
-makes.
+
+Two things are true here and they are worth keeping apart. `connect-src 'self'`
+means the browser will not let this page reach a third-party origin, so this
+same-origin path is the only destination left. It does **not** mean same-origin
+requests are forbidden — so what keeps scan context off the wire is the code:
+the scanner calls `fetch` nowhere, and this widget's request body is the field
+above. Credit the header with the first half only.
 
 That restraint is load-bearing. `/impact/privacy/` tells a DPO that the only
 thing that leaves the browser is the address they typed, and invites them to

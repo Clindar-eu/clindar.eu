@@ -40,13 +40,20 @@
     Permissions-Policy = "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Cross-Origin-Opener-Policy = "same-origin"
 
-# The scanner. No third-party origin is reachable from this page at all: with
-# connect-src 'self', the only endpoint its JavaScript can address is a path on
-# this domain, and the only path that accepts anything is the subscribe
-# function, which takes an email address. The Define-XML has nowhere to go.
-# That is a product claim, not a hardening detail — 'self' is exactly as far as
-# this may ever be relaxed, and this string is also the source the build copies
-# into the scanner's own <meta> tag (see scripts/build.mjs).
+# The scanner. With connect-src 'self' the browser blocks every third-party
+# destination, so the only endpoint this page's JavaScript can address is a path
+# on this domain, and the only path that accepts anything is the subscribe
+# function, which takes an email address.
+#
+# What that does NOT do is forbid a same-origin request. The header bounds the
+# destinations to one; it is the scanner's own code — which calls fetch nowhere
+# — that keeps the Define-XML out of the one that remains. Both halves are
+# load-bearing, and /impact/privacy/ says so in those terms rather than crediting
+# the policy with the whole thing.
+#
+# The policy half is still a product claim and not a hardening detail: 'self' is
+# exactly as far as this may ever be relaxed, and this string is also the source
+# the build copies into the scanner's own <meta> tag (see scripts/build.mjs).
 [[headers]]
   for = "/scanner/*"
 

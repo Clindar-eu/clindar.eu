@@ -1,8 +1,10 @@
 // POST /.netlify/functions/subscribe — the only network call the scanner page
 // is capable of making.
 //
-// The scanner runs under `connect-src 'self'`, so this same-origin path is the
-// entire list of origins its JavaScript can reach. What arrives here is one
+// The scanner runs under `connect-src 'self'`, so the browser blocks its
+// JavaScript from reaching any third-party origin and this same-origin path is
+// the only destination the policy leaves standing. The policy permits it; what
+// keeps scan context out of it is code, not the header. What arrives here is one
 // email address and nothing else: no Define-XML, no study identifiers, no scan
 // result. The widget in widget/scanner-capture.js deliberately never puts them in
 // the body, and this handler would ignore them if it did.

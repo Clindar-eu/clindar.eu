@@ -50,8 +50,13 @@
         <p class="impact-prose">
           The Define-XML you drop in is parsed by JavaScript running in your
           browser tab. It is not uploaded, not proxied, not queued, and not
-          logged. It is never sent anywhere, because the page it runs on is
-          served with a policy that leaves it nowhere to send it.
+          logged. Two controls keep that true and they are different in kind: the
+          page's Content-Security-Policy stops the browser opening a connection
+          to any third-party origin, and the scanner's own code makes no request
+          containing your file, its contents, its name, a study identifier or a
+          result. The first your browser enforces whatever we do; the second is
+          a fact about source code, and the section below is how to watch it
+          rather than believe it.
         </p>
         <p class="impact-prose">
           One thing can leave, and only if you type it: an email address, after
@@ -113,9 +118,17 @@
           <strong>connect-src 'self'</strong> is the directive that matters.
           It means the page's JavaScript can open a network connection to
           exactly one origin — this one — and to no other. Not to an analytics
-          service, not to a font host, not to a CDN, not to an error reporter,
-          not to us by any other route. A browser enforces this; it is not a
-          setting the page can opt out of.
+          service, not to a font host, not to a CDN, not to an error reporter.
+          A browser enforces this; it is not a setting the page can opt out of.
+        </p>
+        <p class="impact-prose">
+          <strong>And here is what it does not do.</strong> It does not stop the
+          page making a request to this origin.
+          <span class="impact-code">'self'</span> draws the boundary around
+          third parties, not around us. So the policy on its own is not the
+          reason your Define-XML stays in the tab: it rules out every
+          destination but one, and something else has to rule out that one. A
+          page that stopped explaining here would be overstating its case.
         </p>
         <p class="impact-prose">
           <strong>Why that says 'self' and not 'none'.</strong>
@@ -129,15 +142,23 @@
           describing the stronger one.
         </p>
         <p class="impact-prose">
-          What <span class="impact-code">'self'</span> does not do is widen the
-          claim about your data. It permits requests to this origin and to no
-          other; the only request the scanner ever makes under it is the
-          <span class="impact-code">POST</span> you trigger by joining the
-          list; and that request carries the address you typed and nothing
-          else. Your Define-XML is not in it. It is never read into anything
-          that could put it there, and it does not cross the network under
-          either policy — which is the part you can check for yourself below,
-          rather than take from us.
+          <strong>What the code does with the destination that is left.</strong>
+          Nothing. The scanner's own JavaScript contains no
+          <span class="impact-code">fetch</span> call: it reads the file with
+          the File API, parses it in a Worker bundled into its own assets, and
+          renders the result from memory. The only code on the page that makes a
+          request at all is the email widget, and the body of that request is the
+          address you typed — plus a hidden honeypot field, on the rare occasion
+          something automated fills one in. Your Define-XML is not in it. Neither
+          is its name, a study identifier, a score, a band or a rule id; none of
+          them is ever read into anything that could put them there.
+        </p>
+        <p class="impact-prose">
+          That is a statement about what the source code does, not about what a
+          header forbids, and the two deserve different amounts of trust. A
+          header you can read off the wire in ten seconds. Code you have to
+          watch — so the next section is five minutes of watching it, with
+          nothing taken on our word.
         </p>
         <p class="impact-prose">
           The same page also loads no third-party script of any kind. The
@@ -169,28 +190,39 @@
             tag in the page source, which the browser enforces as well.
           </li>
           <li>
-            <strong>Watch the scan.</strong> Leave the Network tab open, tick
-            "Preserve log", and drop in a Define-XML. Nothing new appears. No
-            XHR, no fetch, no beacon, no image request with your data hidden in
-            the query string. The score arrives with no network activity at all,
+            <strong>Watch the scan.</strong> Loading the page is itself network
+            activity: you will see the HTML, the scripts, the worker chunk and
+            the stylesheet arrive, which is every visitor collecting the same
+            files. Let that settle. Then tick "Preserve log" and drop in a
+            Define-XML. <strong>Nothing further appears.</strong> No XHR, no
+            fetch, no beacon, no image request with your data hidden in the
+            query string. The score arrives without a single new request,
             because the work happened in the tab.
           </li>
           <li>
-            <strong>Try to break it.</strong> If you want to be certain the
-            policy is doing the work rather than the page merely behaving, open
-            the Console and run
+            <strong>Test the policy — then test the gap in it.</strong> In the
+            Console, run
             <span class="impact-code">fetch('https://example.com')</span>. The
-            browser refuses it and says why. That refusal is what stands between
-            your Define-XML and the internet.
+            browser refuses it and says why: that is
+            <span class="impact-code">connect-src 'self'</span> closing off
+            every third-party destination. Now run
+            <span class="impact-code">fetch('/impact/privacy/')</span>. That one
+            succeeds — same-origin requests are permitted, and any honest
+            reading of the policy has to say so. What keeps your Define-XML out
+            of a request to this origin is therefore not the header. It is that
+            the scanner holds no code that would build one, which is what the
+            step above let you watch.
           </li>
           <li>
-            <strong>Watch the one request that does happen.</strong> If you join
+            <strong>Watch the one request that can happen.</strong> If you join
             the mailing list, a single
             <span class="impact-code">POST</span> to
             <span class="impact-code">/.netlify/functions/subscribe</span>
             appears. Click it and read the request payload: it is
             <span class="impact-code">{"email":"…"}</span> and nothing else — no
-            file name, no study identifier, no score, no rule ids.
+            file name, no study identifier, no score, no rule ids. It is the only
+            request the page can make after it has loaded, and it happens only
+            because you asked for it.
           </li>
           <li>
             <strong>Download the report and watch nothing happen.</strong> Click

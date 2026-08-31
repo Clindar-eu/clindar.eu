@@ -7,6 +7,9 @@
  *
  * The contract it keeps, and the reason the privacy page can say what it says:
  * the only thing this widget ever sends is the address typed into its input.
+ * The scanner's CSP is what stops a third-party origin being reachable; this
+ * file is what stops the one reachable origin receiving anything of the
+ * reader's. The second half is not enforced by anything but the code below.
  * It reads no scan result, no file name, no study identifier. The event that
  * reveals it may carry a score in `detail` — that is used to decide whether to
  * appear, and is never read into the request body.
