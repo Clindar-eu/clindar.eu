@@ -40,6 +40,32 @@
     Permissions-Policy = "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Cross-Origin-Opener-Policy = "same-origin"
 
+# The scanner's privacy page. Same policy as the marketing baseline above with
+# both Google Fonts origins removed, because this page self-hosts its faces —
+# see css/fonts.css.
+#
+# The page is where a reader goes to check the claim that the scanner sends
+# their Define-XML nowhere, and it is meant to be read with devtools open. A
+# request to fonts.googleapis.com in that network panel is the reader's first
+# result, and it is a third party receiving their IP address on the page
+# promising nothing is sent to third parties. Self-hosting removes the request;
+# this block is what stops it coming back. A re-added <link> to Google Fonts
+# now fails visibly in the console instead of quietly restoring the thing the
+# page exists to deny.
+#
+# The rest of the site still links Google Fonts and the baseline above still
+# permits it. That is a deliberate split, not an oversight: this is the only
+# page whose argument its own network activity can contradict.
+#
+# What this does NOT tighten, and could: script-src still permits plausible.io
+# here, inherited from the baseline, though this page loads no analytics and
+# says so. Narrowing it is a separate decision from self-hosting the fonts.
+[[headers]]
+  for = "/impact/privacy/*"
+
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://plausible.io; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://plausible.io"
+
 # The scanner. With connect-src 'self' the browser blocks every third-party
 # destination, so the only endpoint this page's JavaScript can address is a path
 # on this domain, and the only path that accepts anything is the subscribe
