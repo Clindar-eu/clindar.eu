@@ -111,6 +111,28 @@
           setting the page can opt out of.
         </p>
         <p class="impact-prose">
+          <strong>Why that says 'self' and not 'none'.</strong>
+          <span class="impact-code">connect-src 'none'</span> is the stricter
+          directive — it permits no network connection at all, and it is what
+          this page would carry if the scanner did nothing but score your file.
+          It says <span class="impact-code">'self'</span> for one reason: the
+          option to have the written report emailed to you needs a request to
+          somewhere, and that somewhere is a path on this domain. We would
+          rather tell you that than quietly ship the weaker policy and keep
+          describing the stronger one.
+        </p>
+        <p class="impact-prose">
+          What <span class="impact-code">'self'</span> does not do is widen the
+          claim about your data. It permits requests to this origin and to no
+          other; the only request the scanner ever makes under it is the
+          <span class="impact-code">POST</span> you trigger by asking for the
+          report; and that request carries the address you typed and nothing
+          else. Your Define-XML is not in it. It is never read into anything
+          that could put it there, and it does not cross the network under
+          either policy — which is the part you can check for yourself below,
+          rather than take from us.
+        </p>
+        <p class="impact-prose">
           The same page also loads no third-party script of any kind. The
           scanner's own JavaScript, its stylesheet and the email capture widget
           all come from this domain. Our marketing pages do use
