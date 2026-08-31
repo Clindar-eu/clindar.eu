@@ -51,6 +51,24 @@
 # load-bearing, and /impact/privacy/ says so in those terms rather than crediting
 # the policy with the whole thing.
 #
+# 'unsafe-inline' is deliberately absent from style-src. Every rule the scanner
+# page uses is in a same-origin stylesheet — Vite emits one file and links it,
+# the capture widget brings its own, and no component sets a style attribute or
+# builds a <style> element. The build checks that rather than trusting it: see
+# assertScannerStylesMatchPolicy in scripts/build.mjs, which fails the build if
+# this directive says 'self' and the produced page still needs more.
+#
+# The downloaded report is a different document and is NOT governed by this. It
+# is written to a Blob, saved to disk, and opened from the filesystem, where no
+# policy of ours reaches it; its inline styles are what make a single saved file
+# render on its own, which is the whole point of it.
+#
+# It stays a different document only while it is downloaded. A blob: URL opened
+# in a tab inherits the policy of the page that created it, so the report would
+# arrive under this one and render unstyled. If it ever wants an in-tab preview,
+# that preview gets its own document and its own policy — not this directive
+# reopened for every visitor to buy a preview nobody asked for.
+#
 # The policy half is still a product claim and not a hardening detail: 'self' is
 # exactly as far as this may ever be relaxed, and this string is also the source
 # the build copies into the scanner's own <meta> tag (see scripts/build.mjs).
@@ -58,7 +76,7 @@
   for = "/scanner/*"
 
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"

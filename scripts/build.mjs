@@ -18,6 +18,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildCatalogue } from './build-catalogue.mjs';
+import {
+  assertPrivacyPageShowsPolicy,
+  assertScannerStylesMatchPolicy,
+} from './check-scanner-csp.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
@@ -291,7 +295,13 @@ for (const entry of WIDGET_ENTRIES) {
 linkWidget(join(dist, 'scanner', 'index.html'));
 
 step('scanner CSP from netlify.toml');
-applyScannerCsp(join(dist, 'scanner', 'index.html'), scannerCspFromNetlifyToml());
+const scannerCsp = scannerCspFromNetlifyToml();
+applyScannerCsp(join(dist, 'scanner', 'index.html'), scannerCsp);
+assertScannerStylesMatchPolicy({ policy: scannerCsp, scannerDir: join(dist, 'scanner') });
+assertPrivacyPageShowsPolicy({
+  policy: scannerCsp,
+  privacyPage: join(dist, 'impact', 'privacy', 'index.html'),
+});
 
 // Read-only with respect to the submodule, and downstream of the scanner build
 // so it renders the same catalogue the scanner was compiled against.
