@@ -96,3 +96,89 @@ test('the privacy page still describes the exact payload a reader can verify', (
   // Collapsed, because the sentence is wrapped across lines in the source.
   assert.match(PRIVACY.replace(/\s+/g, ' '), /downloads out of the tab/i);
 });
+
+/**
+ * Claims that are false the moment the mailing list exists.
+ *
+ * The scanner header once said "once this page has loaded the scanner makes no
+ * network request at all" while the widget below it posted an address to a
+ * same-origin path. These pages make the same argument to the same reader, and
+ * a reader who finds one overstatement stops trusting the careful sentences
+ * around it — which are the ones doing the real work.
+ *
+ * Scoped to the rendered prose, not the source: the pages explain in comments
+ * why the absolute wording went, and quoting it there is how the next editor
+ * learns not to reintroduce it.
+ */
+const OVERCLAIMS = [
+  'no network request at all',
+  'nothing can leave',
+  'nowhere to send it',
+  'physically incapable',
+  'makes no request after',
+];
+
+/** HTML with comments and tags removed, collapsed to comparable prose. */
+const prose = (html) =>
+  html
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+
+test('neither scanner page claims more than the mailing list allows', () => {
+  for (const [name, html] of [
+    ['impact/index.html', IMPACT],
+    ['impact/privacy/index.html', PRIVACY],
+  ]) {
+    const text = prose(html);
+    for (const claim of OVERCLAIMS) {
+      assert.equal(text.includes(claim), false, `${name} claims "${claim}"`);
+    }
+  }
+});
+
+test('the landing page scopes its no-request claim to scanning', () => {
+  const text = prose(IMPACT);
+
+  assert.ok(
+    text.includes('scanning itself makes no network request'),
+    'the landing page no longer scopes the claim to the act of scanning',
+  );
+  // The exception has to be on the same page as the claim, or the claim is the
+  // only half a skimming reader takes away.
+  assert.ok(
+    text.includes('one request can happen'),
+    'the landing page stopped disclosing the optional mailing-list request',
+  );
+});
+
+test('the widget is still the only thing in the site that can post the address', () => {
+  // If a second sender ever appears, the pages above describe a payload that is
+  // no longer the only one, and this test is the thing that says so.
+  const senders = ['widget/scanner-capture.js', 'js/plausible-init.js', 'js/impact-analytics.js']
+    .map((p) => [p, read(p)])
+    .filter(([, body]) => /\/\.netlify\/functions\/subscribe/.test(body))
+    .map(([p]) => p);
+
+  assert.deepEqual(senders, ['widget/scanner-capture.js']);
+});
+
+test('the widget sends the address, and the honeypot only when it is filled', () => {
+  // The exact body the privacy page prints for a reader to compare against
+  // their own network panel. The honeypot rides along only when something
+  // automated filled a field no human can see.
+  assert.match(WIDGET, /var payload = \{ email: email \};/);
+  assert.match(WIDGET, /if \(instance\.trap\.value !== ''\) payload\.company = instance\.trap\.value;/);
+
+  // Nothing about the scan is assembled into the request. The score arrives on
+  // the reveal event and decides visibility; it must never reach the body.
+  const submit = WIDGET.slice(WIDGET.indexOf('function submitForm('), WIDGET.indexOf('.then(function (response)'));
+  for (const leak of ['score', 'band', 'finding', 'ruleId', 'fileName', 'study', 'result']) {
+    assert.equal(
+      new RegExp(`payload\\.${leak}`, 'i').test(submit),
+      false,
+      `the request body now carries ${leak}`,
+    );
+  }
+});

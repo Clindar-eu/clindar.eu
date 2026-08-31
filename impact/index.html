@@ -106,11 +106,10 @@
           The second is the code, and it is needed because the first does not
           cover everything. That policy still permits requests back to this
           domain — so what keeps your Define-XML out of one is that the scanner
-          never builds one. It calls
-          <span class="impact-code">fetch</span> nowhere. Once its own assets
-          have loaded, it makes no network request at all, and the requests that
-          load it carry nothing of yours: they are the same files every visitor
-          gets.
+          never builds one. Its own code calls
+          <span class="impact-code">fetch</span> nowhere, so scanning itself
+          makes no network request, and the requests that load it carry nothing
+          of yours: they are the same files every visitor gets.
         </p>
         <p class="impact-prose">
           After that, one request can happen: the email address you type in, if
