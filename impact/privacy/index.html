@@ -40,7 +40,7 @@
           reads, what it transmits, and how to confirm both from your own
           devtools without trusting a word of it.
         </p>
-        <p class="impact-pagehead__meta">Applies to <span class="impact-code">clindar.eu/scanner</span>. Last reviewed 25 August 2026.</p>
+        <p class="impact-pagehead__meta">Applies to <span class="impact-code">clindar.eu/scanner</span>. Last reviewed 31 August 2026.</p>
       </div>
     </section>
 
@@ -55,9 +55,16 @@
         </p>
         <p class="impact-prose">
           One thing can leave, and only if you type it: an email address, after
-          your score is on screen, if you want the written report. It goes to
+          your score is on screen, if you join our rules-catalogue mailing list.
+          It goes to
           <span class="impact-code">/.netlify/functions/subscribe</span> on this
           domain. Nothing about your scan goes with it.
+        </p>
+        <p class="impact-prose">
+          Your report does not travel either — in either direction. It is
+          written by the same JavaScript that read your file and downloads out
+          of the tab as HTML, Markdown or JSON. We never receive it, which is
+          also why we cannot email it to you and do not offer to.
         </p>
       </div>
     </section>
@@ -116,7 +123,7 @@
           directive — it permits no network connection at all, and it is what
           this page would carry if the scanner did nothing but score your file.
           It says <span class="impact-code">'self'</span> for one reason: the
-          option to have the written report emailed to you needs a request to
+          mailing-list signup that appears under your score needs a request to
           somewhere, and that somewhere is a path on this domain. We would
           rather tell you that than quietly ship the weaker policy and keep
           describing the stronger one.
@@ -125,8 +132,8 @@
           What <span class="impact-code">'self'</span> does not do is widen the
           claim about your data. It permits requests to this origin and to no
           other; the only request the scanner ever makes under it is the
-          <span class="impact-code">POST</span> you trigger by asking for the
-          report; and that request carries the address you typed and nothing
+          <span class="impact-code">POST</span> you trigger by joining the
+          list; and that request carries the address you typed and nothing
           else. Your Define-XML is not in it. It is never read into anything
           that could put it there, and it does not cross the network under
           either policy — which is the part you can check for yourself below,
@@ -177,13 +184,20 @@
             your Define-XML and the internet.
           </li>
           <li>
-            <strong>Watch the one request that does happen.</strong> If you ask
-            for the written report, a single
+            <strong>Watch the one request that does happen.</strong> If you join
+            the mailing list, a single
             <span class="impact-code">POST</span> to
             <span class="impact-code">/.netlify/functions/subscribe</span>
             appears. Click it and read the request payload: it is
             <span class="impact-code">{"email":"…"}</span> and nothing else — no
             file name, no study identifier, no score, no rule ids.
+          </li>
+          <li>
+            <strong>Download the report and watch nothing happen.</strong> Click
+            "Download HTML report". The file appears with no network request
+            behind it, because the page built it from what was already in
+            memory. That is the same fact from the other side: a document we
+            never receive is a document we cannot email you.
           </li>
         </ol>
         <p class="impact-prose">
@@ -204,15 +218,19 @@
           </div>
           <div>
             <dt>Why</dt>
-            <dd>To send you the written report you asked for, and to tell you when the rules catalogue changes in a way that affects your studies.</dd>
+            <dd>To send you the SDTMIG v4.0 change checklist, and to tell you when the rules catalogue changes. It is a mailing list: every subscriber receives the same emails, because your scan is not something we hold and could tailor them to.</dd>
+          </div>
+          <div>
+            <dt>What is never sent to you</dt>
+            <dd>Your scan report. It is produced in your browser and downloaded from it, and no copy reaches us — so no email we send can contain it, whatever you subscribe to.</dd>
           </div>
           <div>
             <dt>Legal basis</dt>
-            <dd>Consent, GDPR Article 6(1)(a). You gave it by typing the address and asking for the report. Withdraw it at any time with the unsubscribe link on every email, or by writing to us.</dd>
+            <dd>Consent, GDPR Article 6(1)(a). You gave it by typing the address and asking to join the list. Withdraw it at any time with the unsubscribe link on every email, or by writing to us.</dd>
           </div>
           <div>
             <dt>Who else sees it</dt>
-            <dd>Our email service provider, as a processor, for delivery only. It is never sold, never shared for anyone else's marketing, and never joined to anything you scanned — we do not have that to join it to.</dd>
+            <dd>Our email service provider, as a processor, which stores the address and sends the list. It is never sold, never shared for anyone else's marketing, and never joined to anything you scanned — we do not have that to join it to.</dd>
           </div>
           <div>
             <dt>How long</dt>

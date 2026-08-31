@@ -75,6 +75,26 @@ the widget hides again.
 If you would rather mount it by hand — a ref and a `useEffect` — the API is
 `window.ClindarCapture.mount(element, { focus })`, which returns
 `{ show, hide, element }`. The auto-mount path exists so you do not have to.
+`onSuccess` is called as `onSuccess({ subscribed })`; `subscribed` is `false`
+when the endpoint reached no provider, which on a configured deploy never
+happens.
+
+## What the widget offers
+
+A mailing list: the SDTMIG v4.0 change checklist, and a note when a rule in the
+catalogue changes. Not the report.
+
+It used to offer the report — "Get the full written report", "The report is on
+its way" — over an endpoint that has never received a scan and cannot compose an
+email. The report is rendered in the scanner tab by `renderHtml` and
+`renderMarkdown` and downloaded from it; that is where it stays. Nothing in this
+integration gates those buttons, and the widget sits under the score rather than
+in front of it.
+
+The confirmation therefore says the address was added, not that anything is on
+its way. The endpoint knows a provider accepted an address; it does not know
+that an email was ever delivered. `docs/email-capture.md` has the provider
+configuration this depends on, and the deployment checklist.
 
 ## What the widget sends
 
@@ -95,6 +115,12 @@ thing that leaves the browser is the address they typed, and invites them to
 confirm it in the network panel. Adding scan context to this payload would make
 that page a lie, so if a future version needs it, the privacy page changes in
 the same commit or the change does not land.
+
+It also bounds what can ever be offered here. An endpoint that receives no scan
+cannot send a personalised anything, so the copy may only promise what a
+configured provider demonstrably sends to everyone on the list.
+`tests/capture-copy.test.js` fails if a report promise reappears in the widget
+or on either page.
 
 ## What it does not do
 

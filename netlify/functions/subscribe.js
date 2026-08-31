@@ -7,6 +7,16 @@
 // result. The widget in widget/scanner-capture.js deliberately never puts them in
 // the body, and this handler would ignore them if it did.
 //
+// WHAT THIS IS, AND WHAT IT IS NOT. This is a mailing-list signup. It hands an
+// address to an email service provider and stops. It does not compose, render,
+// attach or send an email, and it could not personalise one if it wanted to —
+// it has never seen the scan. The scanner's report is a local download and
+// stays one; docs/email-capture.md is the whole product decision.
+//
+// So `ok: true` here means a provider accepted the address, and nothing more.
+// It is not evidence that any message was delivered, and the copy on the widget
+// and on /impact/privacy/ is written never to imply that it is.
+//
 // Dependency-free on purpose: global fetch, global crypto, nothing installed.
 
 const crypto = require('node:crypto');
@@ -105,8 +115,14 @@ async function forwardToEsp(email) {
   const apiKey = process.env.ESP_API_KEY;
   const groupId = process.env.ESP_GROUP_ID;
 
-  // Dev and preview: prove the round trip without an ESP account attached.
-  if (provider === 'log') return { ok: true };
+  // Dev and preview: exercise the round trip without an ESP account attached.
+  // It contacts nobody, so it must not be able to look as though it did — it
+  // reports `subscribed: false`, and the widget renders that as a warning
+  // rather than a confirmation. A deploy that reaches a real visitor in this
+  // mode is a misconfiguration, and it now says so on screen.
+  if (provider === 'log') {
+    return { ok: true, subscribed: false, mode: 'development' };
+  }
 
   if (!provider || !apiKey) {
     return { ok: false, reason: 'ESP_PROVIDER or ESP_API_KEY is not set' };
@@ -124,8 +140,9 @@ async function forwardToEsp(email) {
       Accept: 'application/json',
     };
     // Upsert: an address already on the list comes back 200, not an error.
-    // Whether a confirmation email goes out is MailerLite's double opt-in
-    // setting, which is where that decision belongs.
+    // Whether a confirmation goes out, and whether an automation then sends the
+    // checklist, are MailerLite settings — this request neither triggers nor
+    // guarantees either one. docs/email-capture.md names the exact settings.
     body = JSON.stringify(groupId ? { email, groups: [groupId] } : { email });
   } else if (provider === 'buttondown') {
     url = 'https://api.buttondown.com/v1/subscribers';
@@ -133,6 +150,8 @@ async function forwardToEsp(email) {
       Authorization: `Token ${apiKey}`,
       'Content-Type': 'application/json',
     };
+    // The same shape of promise as above: this adds a subscriber. Whether a
+    // confirmation or a welcome email follows is Buttondown's configuration.
     body = JSON.stringify({ email_address: email, type: 'regular' });
   } else {
     return { ok: false, reason: `unknown ESP_PROVIDER: ${provider}` };
@@ -142,16 +161,23 @@ async function forwardToEsp(email) {
   const timer = setTimeout(() => abort.abort(), ESP_TIMEOUT_MS);
   try {
     const response = await fetch(url, { method: 'POST', headers, body, signal: abort.signal });
-    if (response.ok) return { ok: true };
+    if (response.ok) return { ok: true, subscribed: true };
 
     // An address already on the list is a success from the caller's side, and
-    // saying otherwise would tell a stranger who is already subscribed.
+    // saying otherwise would tell a stranger who is already subscribed. What
+    // the caller receives is identical either way, which is the point: this
+    // endpoint cannot be used to test whether an address is on the list. 409 is
+    // the status Buttondown uses for it; MailerLite upserts and never gets here.
     const text = (await response.text()).toLowerCase();
-    if (response.status === 400 && text.includes('already')) return { ok: true };
-    if (response.status === 422 && text.includes('already')) return { ok: true };
+    if (response.status === 409) return { ok: true, subscribed: true };
+    if (response.status === 400 && text.includes('already')) return { ok: true, subscribed: true };
+    if (response.status === 422 && text.includes('already')) return { ok: true, subscribed: true };
 
     return { ok: false, reason: `${provider} responded ${response.status}` };
   } catch (error) {
+    // An AbortError here is the ESP_TIMEOUT_MS deadline. The provider may or may
+    // not have recorded the address, so the caller is told it failed and can try
+    // again; a duplicate on the retry is absorbed above.
     return { ok: false, reason: `${provider} request failed: ${error.name}` };
   } finally {
     clearTimeout(timer);
@@ -191,9 +217,11 @@ exports.handler = async (event) => {
   }
 
   // Honeypot: a field no human sees and no real widget fills. Cheaper than a
-  // captcha and it costs the visitor nothing.
+  // captcha and it costs the visitor nothing. The response is exactly what a
+  // real subscription returns — same status, same body — so a bot learns
+  // nothing from having been caught, and nothing is forwarded anywhere.
   if (typeof payload.company === 'string' && payload.company.trim() !== '') {
-    return json(200, { ok: true });
+    return json(200, { ok: true, subscribed: true });
   }
 
   const email = normaliseEmail(payload.email);
@@ -211,7 +239,9 @@ exports.handler = async (event) => {
     // The reason names our own misconfiguration or the ESP's status, never the
     // caller. It goes to the function log; the caller gets a bare failure.
     console.error(`subscribe: ${result.reason}`);
-    return json(502, { ok: false, error: 'delivery_failed' });
+    // Not 'delivery_failed': nothing here ever delivered anything. What
+    // failed is the subscription.
+    return json(502, { ok: false, error: 'subscribe_failed' });
   }
 
   // The whole record: the address, and the hour it arrived. No IP, no user
@@ -221,5 +251,14 @@ exports.handler = async (event) => {
     JSON.stringify({ event: 'subscribe', email, at: new Date(now).toISOString().slice(0, 13) }),
   );
 
-  return json(200, { ok: true });
+  // `subscribed` is the only claim this endpoint is entitled to make: true
+  // means a provider accepted the address, false means nothing left this
+  // process. Neither value says an email arrived, and nothing downstream may
+  // read it as though it did.
+  if (result.subscribed === false) {
+    console.warn('subscribe: ESP_PROVIDER=log — address discarded, nothing sent');
+    return json(200, { ok: true, subscribed: false, mode: result.mode });
+  }
+
+  return json(200, { ok: true, subscribed: true });
 };
