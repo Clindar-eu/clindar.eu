@@ -159,6 +159,11 @@ const chrome = spawn(chromeBinary(), [
   '--disable-gpu',
   '--no-first-run',
   '--no-default-browser-check',
+  // Only under CI, where the runner is often a container without the kernel
+  // namespaces Chrome's sandbox needs and the browser otherwise dies on
+  // startup. Not on a developer machine, where the sandbox works and there is
+  // no reason to give it up. The page being loaded is our own either way.
+  ...(process.env.CI ? ['--no-sandbox'] : []),
   `--user-data-dir=${profile}`,
   '--remote-debugging-port=0',
   'about:blank',
