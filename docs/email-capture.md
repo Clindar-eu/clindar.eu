@@ -38,6 +38,9 @@ was. This is the correction and the configuration it needs.
    hits; validates and normalises the address; rate-limits per caller; and
    forwards the address to one provider. Then it stops. It composes no email,
    renders no template, and holds nothing to personalise one with.
+6. **The log.** One aggregate line — event, provider, outcome, hour — and no
+   address. `docs/data-handling.md` has the full field list, the optional
+   `SUBSCRIBE_LOG_HMAC_KEY` pseudonym, and the retention checklist.
 
 **Step 2 never meets step 5.** That is the whole design, it is what
 `/impact/privacy/` promises a DPO, and requirement one of any future change here
@@ -109,6 +112,12 @@ them per deploy context.
       meant.
 - [ ] **Set the retention rule.** The privacy page promises deletion after two
       years without an opened email. Configure it, or diary it.
+- [ ] **Work through `docs/data-handling.md`.** Netlify log retention, provider
+      retention, staff access, data-subject requests, exports and secret
+      rotation. None of it is enforced by code here, and `/impact/privacy/`
+      describes all of it as configured rather than proven.
+- [ ] **Leave `SUBSCRIBE_LOG_HMAC_KEY` unset** unless an investigation needs to
+      correlate repeat attempts. Aggregate counts are the default for a reason.
 
 ### If the checklist is not ready
 
@@ -128,7 +137,7 @@ it is that the copy names what a configured provider demonstrably sends.
 | `200 {"ok":true,"subscribed":false,"mode":"development"}` | No provider was contacted. Nothing was stored. Nothing will arrive. |
 | `400 {"error":"invalid_email"}` | The address failed validation here. |
 | `429 {"error":"too_many_requests"}` | More than five submissions from this caller in an hour. |
-| `502 {"error":"subscribe_failed"}` | The provider refused, timed out, or is not configured. Which of those it was goes to the function log and never to the caller. |
+| `502 {"error":"subscribe_failed"}` | The provider refused, timed out, or is not configured. Which of those it was goes to the function log — as a status code, never a response body — and never to the caller. |
 
 The field is `subscribed`, not `delivered` or `sent`, because subscription is
 the only fact this process is in a position to know.

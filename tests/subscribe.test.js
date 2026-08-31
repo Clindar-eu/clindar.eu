@@ -88,6 +88,8 @@ test.beforeEach(() => {
   process.env.ESP_PROVIDER = 'mailerlite';
   process.env.ESP_API_KEY = 'test-key-not-a-real-one';
   delete process.env.ESP_GROUP_ID;
+  // Off unless a test turns it on: the pseudonym is opt-in in production too.
+  delete process.env.SUBSCRIBE_LOG_HMAC_KEY;
   // Any test that does not stub fetch should fail loudly rather than dial out.
   globalThis.fetch = async () => {
     throw new Error('the provider was contacted by a test that did not stub fetch');
@@ -512,4 +514,254 @@ test('a sixth submission from one caller within the hour is refused', async () =
   const refused = await invoke({ ip, body: { email: 'reader5@sponsor.example' } });
   assert.equal(refused.statusCode, 429);
   assert.deepEqual(JSON.parse(refused.body), { ok: false, error: 'too_many_requests' });
+});
+
+// ---------------------------------------------------------------------------
+// Logging.
+//
+// The function used to write the whole address into the function log on every
+// success. Nothing needed it there — the address's necessary home is the email
+// provider, and a second copy in an infrastructure log is a second place to
+// have to defend, expire and search on a deletion request. These tests are what
+// stop it coming back.
+// ---------------------------------------------------------------------------
+
+const ADDRESS = 'grace.hopper@sponsor.example';
+
+/** Run one scenario with the console captured, and return everything it wrote. */
+async function linesFrom(run) {
+  const logs = captureLogs();
+  let result;
+  try {
+    result = await run();
+  } finally {
+    logs.restore();
+  }
+  return {
+    result,
+    all: [...logs.lines.log, ...logs.lines.warn, ...logs.lines.error].join('\n'),
+    structured: logs.lines.log.map((line) => JSON.parse(line)),
+  };
+}
+
+test('no outcome writes the submitted address to a log', async () => {
+  const scenarios = {
+    subscribed: () => stubFetch(() => response(200, '{"data":{}}')),
+    duplicate: () => stubFetch(() => response(409, '{}')),
+    provider_500: () => stubFetch(() => response(500, 'upstream exploded')),
+    timeout: () => {
+      globalThis.fetch = async () => {
+        throw Object.assign(new Error('This operation was aborted'), { name: 'AbortError' });
+      };
+    },
+    unconfigured: () => {
+      delete process.env.ESP_PROVIDER;
+      delete process.env.ESP_API_KEY;
+    },
+    unknown_provider: () => {
+      process.env.ESP_PROVIDER = 'mailchimp';
+    },
+    development: () => {
+      process.env.ESP_PROVIDER = 'log';
+    },
+  };
+
+  for (const [name, setup] of Object.entries(scenarios)) {
+    process.env.ESP_PROVIDER = 'mailerlite';
+    process.env.ESP_API_KEY = 'test-key-not-a-real-one';
+    setup();
+
+    const { all } = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+    assert.equal(all.includes(ADDRESS), false, `${name} logged the address`);
+    assert.equal(all.includes('grace.hopper'), false, `${name} logged the local part`);
+    assert.equal(all.includes('sponsor.example'), false, `${name} logged the domain`);
+  }
+});
+
+test('the rejected paths log a category and nothing about the caller', async () => {
+  const cases = [
+    [{ email: 'bot@sponsor.example', company: 'Acme Ltd' }, 'honeypot'],
+    [{ email: 'not-an-address' }, 'invalid_email'],
+  ];
+
+  for (const [body, outcome] of cases) {
+    const { all, structured } = await linesFrom(() => invoke({ body }));
+
+    assert.equal(structured.length, 1, `${outcome} wrote ${structured.length} lines`);
+    assert.deepEqual(Object.keys(structured[0]).sort(), ['at', 'event', 'outcome']);
+    assert.equal(structured[0].outcome, outcome);
+    // No provider was contacted on either path, so none is named.
+    assert.equal('provider' in structured[0], false);
+    assert.equal(all.includes('bot@sponsor.example'), false);
+    assert.equal(all.includes('not-an-address'), false);
+  }
+});
+
+test('a rate-limited request logs the category without identifying the caller', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+  const ip = '203.0.113.180';
+
+  for (let i = 0; i < 5; i += 1) {
+    await invoke({ ip, body: { email: `reader${i}@sponsor.example` } });
+  }
+
+  const { all, structured } = await linesFrom(() =>
+    invoke({ ip, body: { email: ADDRESS } }),
+  );
+
+  assert.equal(structured[0].outcome, 'rate_limited');
+  assert.equal(all.includes(ip), false, 'the IP reached a log');
+  assert.equal(all.includes(ADDRESS), false);
+});
+
+test('the structured line carries categories, not content', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+
+  const { structured } = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+  assert.equal(structured.length, 1);
+  const line = structured[0];
+  assert.deepEqual(Object.keys(line).sort(), ['at', 'event', 'outcome', 'provider']);
+  assert.equal(line.event, 'subscribe');
+  assert.equal(line.provider, 'mailerlite');
+  assert.equal(line.outcome, 'subscribed');
+  // The hour, and no finer. A minute would start to be a behavioural record.
+  assert.match(line.at, /^\d{4}-\d{2}-\d{2}T\d{2}$/);
+  assert.equal('email' in line, false);
+});
+
+test('each outcome is named in the line rather than inferred from its absence', async () => {
+  stubFetch(() => response(500, 'upstream exploded'));
+  const failed = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+  assert.equal(failed.structured[0].outcome, 'failed');
+  assert.equal(failed.structured[0].provider, 'mailerlite');
+
+  process.env.ESP_PROVIDER = 'log';
+  const dev = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+  assert.equal(dev.structured[0].outcome, 'not_sent');
+  assert.equal(dev.structured[0].provider, 'log');
+
+  delete process.env.ESP_PROVIDER;
+  delete process.env.ESP_API_KEY;
+  const unset = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+  assert.equal(unset.structured[0].provider, 'unset');
+});
+
+// Requirement seven, and the realistic leak: providers quote the submitted
+// address back in their validation errors.
+test('a provider error body containing the address never reaches a log', async () => {
+  stubFetch(() =>
+    // Deliberately not a duplicate message, or this would be classified as one
+    // and never reach the failure path being tested.
+    response(422, JSON.stringify({ message: `The email ${ADDRESS} was rejected.` })),
+  );
+
+  const { all } = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+  assert.equal(all.includes(ADDRESS), false, 'the provider response body leaked into a log');
+  assert.match(all, /mailerlite responded 422/);
+});
+
+test('no log line carries the IP, user agent, referrer, API key or request body', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+
+  const { all } = await linesFrom(() =>
+    invoke({
+      ip: '203.0.113.9',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (SecretBrowserBuild)',
+        referer: 'https://intranet.sponsor.example/studies/ABC-301',
+      },
+      body: {
+        email: ADDRESS,
+        fileName: 'define-ABC-301.xml',
+        studyId: 'ABC-301',
+        ruleIds: ['VAR-010'],
+      },
+    }),
+  );
+
+  const forbidden = [
+    '203.0.113.9',
+    'SecretBrowserBuild',
+    'intranet.sponsor.example',
+    'test-key-not-a-real-one',
+    'Bearer',
+    'Authorization',
+    'define-ABC-301.xml',
+    'ABC-301',
+    'VAR-010',
+  ];
+  for (const value of forbidden) {
+    assert.equal(all.includes(value), false, `logged ${value}`);
+  }
+});
+
+test('no subscriber identifier is logged unless one is configured', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+
+  const { structured } = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+  assert.equal('sid' in structured[0], false);
+});
+
+test('an absent or empty logging secret fails safely rather than throwing', async () => {
+  for (const value of [undefined, '']) {
+    stubFetch(() => response(200, '{"data":{}}'));
+    if (value === undefined) delete process.env.SUBSCRIBE_LOG_HMAC_KEY;
+    else process.env.SUBSCRIBE_LOG_HMAC_KEY = value;
+
+    const { result, structured } = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+    assert.equal(result.statusCode, 200);
+    assert.equal('sid' in structured[0], false);
+  }
+});
+
+test('a configured key gives a stable pseudonym that is not the address', async () => {
+  process.env.SUBSCRIBE_LOG_HMAC_KEY = 'a-dedicated-logging-secret';
+
+  stubFetch(() => response(200, '{"data":{}}'));
+  const first = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+  stubFetch(() => response(200, '{"data":{}}'));
+  const cased = await linesFrom(() => invoke({ body: { email: ADDRESS.toUpperCase() } }));
+  stubFetch(() => response(200, '{"data":{}}'));
+  const other = await linesFrom(() => invoke({ body: { email: 'ada@sponsor.example' } }));
+
+  const sid = first.structured[0].sid;
+  assert.match(sid, /^[A-Za-z0-9_-]{16}$/);
+  // A provider treats these as one subscriber, so the pseudonym must too.
+  assert.equal(cased.structured[0].sid, sid);
+  assert.notEqual(other.structured[0].sid, sid);
+
+  assert.equal(first.all.includes(ADDRESS), false, 'the address was logged beside its pseudonym');
+  assert.equal(
+    first.all.includes('a-dedicated-logging-secret'),
+    false,
+    'the logging secret was printed',
+  );
+});
+
+test('rotating the key severs correlation, which is what rotation is for', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+  process.env.SUBSCRIBE_LOG_HMAC_KEY = 'key-one';
+  const before = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+  stubFetch(() => response(200, '{"data":{}}'));
+  process.env.SUBSCRIBE_LOG_HMAC_KEY = 'key-two';
+  const after = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+  assert.notEqual(after.structured[0].sid, before.structured[0].sid);
+});
+
+test('a failed subscription carries the pseudonym so a retry loop is visible', async () => {
+  process.env.SUBSCRIBE_LOG_HMAC_KEY = 'a-dedicated-logging-secret';
+  stubFetch(() => response(500, 'upstream exploded'));
+
+  const { all, structured } = await linesFrom(() => invoke({ body: { email: ADDRESS } }));
+
+  assert.equal(structured[0].outcome, 'failed');
+  assert.match(structured[0].sid, /^[A-Za-z0-9_-]{16}$/);
+  assert.equal(all.includes(ADDRESS), false);
 });

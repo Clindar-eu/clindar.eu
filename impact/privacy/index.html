@@ -246,7 +246,15 @@
         <dl class="impact-facts">
           <div>
             <dt>What is collected</dt>
-            <dd>The email address you type, and the hour it arrived. Nothing else is recorded: no IP address, no browser, no referrer, no scan result.</dd>
+            <dd>The email address you type. It goes to our email service provider and is stored there, which is what a mailing list is; that is the only place a copy lives on purpose.</dd>
+          </div>
+          <div>
+            <dt>What our own endpoint writes down</dt>
+            <dd>One line per request: the event name, which provider was used, how it turned out — subscribed, failed, rate-limited — and the hour. Not the address. Not your IP address, your browser, the page you came from, or anything you scanned. The address is passed to the provider and dropped; it is never handed to a logging call at all, so there is no redaction step that could one day be forgotten.</dd>
+          </div>
+          <div>
+            <dt>Telling repeat attempts apart</dt>
+            <dd>If we ever have to distinguish one address retrying forty times from forty addresses arriving once, the endpoint can log a keyed HMAC of the address in place of the address: a short string that cannot be turned back into an email without a secret that never leaves the server and is never printed. It is off unless a specific operational question needs it, and rotating that secret makes every identifier already written unlinkable to any written after.</dd>
           </div>
           <div>
             <dt>Why</dt>
@@ -266,7 +274,7 @@
           </div>
           <div>
             <dt>How long</dt>
-            <dd>Until you unsubscribe, or after two years without a single opened email, whichever comes first.</dd>
+            <dd>Until you unsubscribe, or after two years without a single opened email, whichever comes first. That is a retention rule configured at the email provider rather than something our code enforces, so it is a commitment we keep by administration — ask and we will tell you what it is currently set to.</dd>
           </div>
           <div>
             <dt>Your rights</dt>
@@ -274,7 +282,11 @@
           </div>
           <div>
             <dt>Rate limiting</dt>
-            <dd>The endpoint counts recent submissions per caller for an hour, keyed by a salted hash of the IP address held in memory only. The address itself is never written down and the salt is discarded when the process restarts.</dd>
+            <dd>The endpoint counts recent submissions per caller for an hour, keyed by a salted hash of the IP address, held in memory and nowhere else. Your IP address itself is never written down, the salt is random per process and discarded when the process restarts, and the counts go with it. Nothing about this is logged.</dd>
+          </div>
+          <div>
+            <dt>Infrastructure logs</dt>
+            <dd>Our hosting platform keeps request logs of its own, as every web host does. We will not tell you what a platform records by default, because that is its behaviour and not something we can show you in our source code. We treat it as something to configure rather than something to claim: retention is kept short, access is limited to people who need it, and a deletion request is actioned against the provider's stored data and any operational log still in hand. If a DPIA needs the current retention period in writing, ask and you will get the figure we have set.</dd>
           </div>
         </dl>
         <p class="impact-prose">

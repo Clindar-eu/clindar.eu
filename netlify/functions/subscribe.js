@@ -19,6 +19,13 @@
 // It is not evidence that any message was delivered, and the copy on the widget
 // and on /impact/privacy/ is written never to imply that it is.
 //
+// WHAT IT WRITES DOWN. One structured line per request: the event, which
+// provider was used, which category the request fell into, and the hour. No
+// address, no request body, no IP, no user agent, no referrer, no API key. The
+// address is personal data whose only necessary home is the email provider, and
+// a function log is not a place it needs a second copy. docs/data-handling.md
+// carries the retention and access checklist that surrounds this.
+//
 // Dependency-free on purpose: global fetch, global crypto, nothing installed.
 
 const crypto = require('node:crypto');
@@ -87,6 +94,71 @@ function rateLimited(key, now) {
   return false;
 }
 
+// ---------------------------------------------------------------------------
+// Logging.
+//
+// Everything written here is aggregate by construction. The rule is not "redact
+// the address before logging it" — it is that the address is never handed to a
+// logging call in the first place, so there is no redaction step to get wrong.
+// ---------------------------------------------------------------------------
+
+const LOG_HMAC_ENV = 'SUBSCRIBE_LOG_HMAC_KEY';
+
+/** The provider name for logs. Configuration, never personal data. */
+function providerName() {
+  return (process.env.ESP_PROVIDER || '').toLowerCase() || 'unset';
+}
+
+/** The hour a request arrived, which is as precise as any log line here gets. */
+function hourOf(now) {
+  return new Date(now).toISOString().slice(0, 13);
+}
+
+/**
+ * A stable pseudonym for one address, or null when none is configured.
+ *
+ * OFF BY DEFAULT, AND THAT IS THE RIGHT DEFAULT. Aggregate counts answer every
+ * question this endpoint normally raises — how many subscribed, how many failed,
+ * how many were rate-limited. Set SUBSCRIBE_LOG_HMAC_KEY only when you actually
+ * need to tell "one address retrying forty times" from "forty addresses", and
+ * unset it again when you are done.
+ *
+ * WHY HMAC AND NOT A HASH. Email addresses are enumerable: anyone with a list of
+ * candidates and sha256 can invert a bare digest by trying them. A keyed HMAC
+ * cannot be inverted without the key, which is why the key is a dedicated secret
+ * rather than the API key, is never logged, and never leaves this process.
+ *
+ * ROTATION. The identifier is stable only for the life of the key. Rotate it and
+ * the same address produces a different pseudonym, so correlation does not span
+ * the rotation — which is a feature when the key leaks, and a nuisance when you
+ * are mid-investigation. Rotating is therefore also the way to sever every
+ * pseudonym already written to a log you cannot edit.
+ *
+ * Lowercased first, because a provider treats Reader@ and reader@ as one
+ * subscriber and a pseudonym that disagreed would be useless for the one job it
+ * has.
+ */
+function pseudonym(email) {
+  const key = process.env[LOG_HMAC_ENV];
+  if (!key) return null;
+  return crypto
+    .createHmac('sha256', key)
+    .update(email.toLowerCase())
+    .digest('base64url')
+    .slice(0, 16);
+}
+
+/**
+ * The single structured line per request.
+ *
+ * Callers pass categories, never content. If a future field is not obviously
+ * safe to print beside a hostname in a shared log viewer, it does not belong
+ * here — see the "never logged" list in docs/data-handling.md.
+ */
+function logEvent(fields) {
+  console.log(JSON.stringify({ event: 'subscribe', ...fields }));
+}
+
 function normaliseEmail(value) {
   if (typeof value !== 'string') return null;
   const email = value.trim();
@@ -113,7 +185,7 @@ function foreignOrigin(headers) {
 }
 
 async function forwardToEsp(email) {
-  const provider = (process.env.ESP_PROVIDER || '').toLowerCase();
+  const provider = providerName();
   const apiKey = process.env.ESP_API_KEY;
   const groupId = process.env.ESP_GROUP_ID;
 
@@ -126,7 +198,7 @@ async function forwardToEsp(email) {
     return { ok: true, subscribed: false, mode: 'development' };
   }
 
-  if (!provider || !apiKey) {
+  if (provider === 'unset' || !apiKey) {
     return { ok: false, reason: 'ESP_PROVIDER or ESP_API_KEY is not set' };
   }
 
@@ -170,6 +242,10 @@ async function forwardToEsp(email) {
     // the caller receives is identical either way, which is the point: this
     // endpoint cannot be used to test whether an address is on the list. 409 is
     // the status Buttondown uses for it; MailerLite upserts and never gets here.
+    // Read to classify a duplicate, and for nothing else. A provider that
+    // echoes the submitted address back in an error body is common; putting
+    // that body in `reason` would put the address in a log by the back door,
+    // so `reason` gets the status code and never the text.
     const text = (await response.text()).toLowerCase();
     if (response.status === 409) return { ok: true, subscribed: true };
     if (response.status === 400 && text.includes('already')) return { ok: true, subscribed: true };
@@ -180,6 +256,9 @@ async function forwardToEsp(email) {
     // An AbortError here is the ESP_TIMEOUT_MS deadline. The provider may or may
     // not have recorded the address, so the caller is told it failed and can try
     // again; a duplicate on the retry is absorbed above.
+    //
+    // `error.name`, not `error.message`: a message can quote the request URL or
+    // whatever the provider sent back. The name is a fixed vocabulary.
     return { ok: false, reason: `${provider} request failed: ${error.name}` };
   } finally {
     clearTimeout(timer);
@@ -222,36 +301,45 @@ exports.handler = async (event) => {
   // captcha and it costs the visitor nothing. The response is exactly what a
   // real subscription returns — same status, same body — so a bot learns
   // nothing from having been caught, and nothing is forwarded anywhere.
+  const now = Date.now();
+  const at = hourOf(now);
+
   if (typeof payload.company === 'string' && payload.company.trim() !== '') {
+    logEvent({ outcome: 'honeypot', at });
     return json(200, { ok: true, subscribed: true });
   }
 
   const email = normaliseEmail(payload.email);
   if (!email) {
+    // The address that failed is not written down. It was rejected precisely
+    // because we could not tell what it was; keeping a copy to look at later
+    // would be collecting the one thing we just declined to accept.
+    logEvent({ outcome: 'invalid_email', at });
     return json(400, { ok: false, error: 'invalid_email' });
   }
 
-  const now = Date.now();
   if (rateLimited(clientKey(headers), now)) {
+    logEvent({ outcome: 'rate_limited', at });
     return json(429, { ok: false, error: 'too_many_requests' });
   }
 
+  const provider = providerName();
+  // null unless SUBSCRIBE_LOG_HMAC_KEY is set, and omitted from the line
+  // entirely when it is null rather than logged as an empty field.
+  const sid = pseudonym(email);
+  const identified = sid ? { sid } : {};
+
   const result = await forwardToEsp(email);
   if (!result.ok) {
-    // The reason names our own misconfiguration or the ESP's status, never the
-    // caller. It goes to the function log; the caller gets a bare failure.
+    // The reason names our own misconfiguration or the provider's status code,
+    // never the caller and never a response body. It goes to the function log;
+    // the caller gets a bare failure.
     console.error(`subscribe: ${result.reason}`);
+    logEvent({ provider, outcome: 'failed', at, ...identified });
     // Not 'delivery_failed': nothing here ever delivered anything. What
     // failed is the subscription.
     return json(502, { ok: false, error: 'subscribe_failed' });
   }
-
-  // The whole record: the address, and the hour it arrived. No IP, no user
-  // agent, no referrer, no scan context — the privacy page promises exactly
-  // this and it has to stay true.
-  console.log(
-    JSON.stringify({ event: 'subscribe', email, at: new Date(now).toISOString().slice(0, 13) }),
-  );
 
   // `subscribed` is the only claim this endpoint is entitled to make: true
   // means a provider accepted the address, false means nothing left this
@@ -259,8 +347,10 @@ exports.handler = async (event) => {
   // read it as though it did.
   if (result.subscribed === false) {
     console.warn('subscribe: ESP_PROVIDER=log — address discarded, nothing sent');
+    logEvent({ provider, outcome: 'not_sent', at });
     return json(200, { ok: true, subscribed: false, mode: result.mode });
   }
 
+  logEvent({ provider, outcome: 'subscribed', at, ...identified });
   return json(200, { ok: true, subscribed: true });
 };
