@@ -1,14 +1,17 @@
 /**
- * Checks a served page for horizontal overflow at phone and tablet widths.
+ * Checks served pages for horizontal overflow at phone and tablet widths.
  *
- *   node scripts/audit-responsive.mjs <base-url> [page-path] [screenshot-dir]
+ *   node scripts/audit-responsive.mjs <base-url> [paths] [screenshot-dir]
  *
  *   node scripts/audit-responsive.mjs https://clindar.eu
  *   node scripts/audit-responsive.mjs http://localhost:4173 /scanner/ ./shots
- *   node scripts/audit-responsive.mjs https://deploy-preview-9--example.netlify.app
+ *   node scripts/audit-responsive.mjs https://example.netlify.app /,/impact/
  *
- * Exits non-zero if the document scrolls sideways at any tested width, so it
- * can gate a deploy rather than only inform one.
+ * `paths` is a comma-separated list. Given none, it audits one page of every
+ * distinct template the site has, discovered from its sitemap.
+ *
+ * Exits non-zero if any page scrolls sideways at any tested width, so it can
+ * gate a deploy rather than only inform one.
  *
  * WHY DEVICE EMULATION AND NOT A SMALL WINDOW. Both window-resizing routes lie
  * about this, in opposite directions:
@@ -40,11 +43,51 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const [, , BASE_URL, PAGE_PATH = '/scanner/', SHOT_DIR] = process.argv;
+const [, , BASE_URL, PATHS_ARG, SHOT_DIR] = process.argv;
 
 if (!BASE_URL) {
-  console.error('usage: node scripts/audit-responsive.mjs <base-url> [page-path] [screenshot-dir]');
+  console.error('usage: node scripts/audit-responsive.mjs <base-url> [paths] [screenshot-dir]');
   process.exit(2);
+}
+
+/**
+ * Which pages to audit when the caller does not say.
+ *
+ * Taken from the sitemap rather than hardcoded, so the catalogue page audited
+ * is always a rule that currently exists. A pinned id like `/catalogue/ns-001/`
+ * rots the first time the catalogue is renumbered, and a 404 page measures as
+ * one that fits its viewport beautifully - a check that silently stops checking.
+ *
+ * One rule page and not fifty. They are one template with different prose in
+ * it, so the fiftieth says nothing the first did not, and the run would take
+ * several minutes to say it.
+ */
+async function discoverPaths() {
+  const fallback = ['/', '/impact/', '/impact/privacy/', '/scanner/', '/catalogue/'];
+  const isRulePage = (path) => /^\/catalogue\/.+\//.test(path);
+  try {
+    const res = await fetch(new URL('/sitemap.xml', BASE_URL));
+    if (!res.ok) throw new Error(`sitemap returned ${res.status}`);
+    const listed = [...(await res.text()).matchAll(/<loc>([^<]+)<\/loc>/g)]
+      .map((m) => {
+        try {
+          return new URL(m[1].trim()).pathname;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+    if (!listed.length) throw new Error('sitemap listed no usable URLs');
+
+    const oneRulePage = listed.find(isRulePage);
+    const everythingElse = listed.filter((path) => !isRulePage(path));
+    return oneRulePage ? [...everythingElse, oneRulePage] : everythingElse;
+  } catch (err) {
+    // A missing sitemap is not a reason to audit nothing; it is a reason to
+    // audit the pages we know the site has and say why.
+    console.log(`could not read the sitemap (${err.message}); auditing the usual pages`);
+    return fallback;
+  }
 }
 
 /**
@@ -245,98 +288,114 @@ await send('Runtime.enable');
 
 if (SHOT_DIR) mkdirSync(SHOT_DIR, { recursive: true });
 
-const url = new URL(PAGE_PATH, BASE_URL).href;
+const paths = PATHS_ARG
+  ? PATHS_ARG.split(',').map((x) => x.trim()).filter(Boolean)
+  : await discoverPaths();
+
+console.log(`auditing ${paths.length} page(s) at ${VIEWPORTS.length} widths each
+`);
+
 const failures = [];
 
-for (const vp of VIEWPORTS) {
-  await send('Emulation.setDeviceMetricsOverride', {
-    width: vp.width,
-    height: vp.height,
-    deviceScaleFactor: vp.scale,
-    mobile: true,
-  });
-  // A navigation that fails is the one result this script must never report as
-  // a pass: an unreachable host leaves a blank document, a blank document has
-  // nothing wider than the viewport, and "ok" is exactly the wrong answer. CDP
-  // reports the failure in the navigate result rather than by throwing.
-  const nav = await send('Page.navigate', { url });
-  if (nav.errorText) {
-    console.error(`could not load ${url}: ${nav.errorText}`);
-    process.exitCode = 2;
-    shutdown();
-    process.exit(2);
+for (const path of paths) {
+  const url = new URL(path, BASE_URL).href;
+  console.log(path);
+
+  for (const vp of VIEWPORTS) {
+    await send('Emulation.setDeviceMetricsOverride', {
+      width: vp.width,
+      height: vp.height,
+      deviceScaleFactor: vp.scale,
+      mobile: true,
+    });
+    // A navigation that fails is the one result this script must never report as
+    // a pass: an unreachable host leaves a blank document, a blank document has
+    // nothing wider than the viewport, and "ok" is exactly the wrong answer. CDP
+    // reports the failure in the navigate result rather than by throwing.
+    const nav = await send('Page.navigate', { url });
+    if (nav.errorText) {
+      console.error(`could not load ${url}: ${nav.errorText}`);
+      process.exitCode = 2;
+      shutdown();
+      process.exit(2);
+    }
+    await sleep(3500);
+
+    // And a host that answers but serves nothing useful is the same problem one
+    // step later, so the page has to show it rendered something before any of the
+    // measurements below are worth reading.
+    const loaded = await evaluate(
+      '({ url: location.href, elements: document.body ? document.body.querySelectorAll("*").length : 0 })',
+    );
+
+    // The page that answered must be the page that was asked for. Without this,
+    // anything that quietly substitutes a different document - a shell mangling
+    // the path argument into a local file, a redirect to a login or error page, a
+    // captive portal - gets measured instead, and whatever it happens to be will
+    // usually fit its viewport and report a serene, meaningless "ok".
+    if (new URL(loaded.url).origin !== new URL(url).origin) {
+      console.error(`asked for ${url} but the browser is showing ${loaded.url}`);
+      process.exitCode = 2;
+      shutdown();
+      process.exit(2);
+    }
+    // Zero, not some larger floor: a legitimate page can be a single element, and
+    // the origin check above is what catches a substituted document. This is only
+    // here for the case where the right origin answers with nothing at all.
+    if (loaded.elements === 0) {
+      console.error(`loaded ${loaded.url} but it rendered an empty body; refusing to call that a pass`);
+      process.exitCode = 2;
+      shutdown();
+      process.exit(2);
+    }
+
+    // Two studies, so the portfolio table has something to be too wide with.
+    const dropped = await evaluate(`(() => {
+      const zone = document.querySelector('.drop');
+      if (!zone) return false;
+      const xml = ${JSON.stringify(SYNTHETIC_DEFINE('AUDIT-A'))};
+      const dt = new DataTransfer();
+      dt.items.add(new File([xml], 'audit-a.xml', { type: 'text/xml' }));
+      dt.items.add(new File([xml.replace('AUDIT-A', 'AUDIT-B')], 'audit-b.xml', { type: 'text/xml' }));
+      zone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      return true;
+    })()`);
+    if (dropped) await sleep(2500);
+
+    const m = await evaluate(MEASURE);
+
+    if (SHOT_DIR) {
+      const slug = path.replace(/^\/|\/$/g, '').replace(/\W+/g, '-') || 'home';
+      const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
+      writeFileSync(join(SHOT_DIR, `${slug}-${vp.name}.png`), Buffer.from(shot.data, 'base64'));
+    }
+
+    const ok = !m.pageScrollsHorizontally;
+    if (!ok) failures.push({ page: path, viewport: vp.name, ...m });
+
+    console.log(
+      `  ${ok ? 'ok  ' : 'FAIL'} ${vp.name.padEnd(11)} ` +
+        `viewport ${String(m.layoutViewport).padStart(4)}  document ${String(m.documentWidth).padStart(4)}` +
+        (dropped ? `  studies ${m.studyRows}` : '') +
+        (ok ? '' : `  <- widened by: ${m.widerThanViewport.join(', ') || 'unknown'}`),
+    );
   }
-  await sleep(3500);
-
-  // And a host that answers but serves nothing useful is the same problem one
-  // step later, so the page has to show it rendered something before any of the
-  // measurements below are worth reading.
-  const loaded = await evaluate(
-    '({ url: location.href, elements: document.body ? document.body.querySelectorAll("*").length : 0 })',
-  );
-
-  // The page that answered must be the page that was asked for. Without this,
-  // anything that quietly substitutes a different document - a shell mangling
-  // the path argument into a local file, a redirect to a login or error page, a
-  // captive portal - gets measured instead, and whatever it happens to be will
-  // usually fit its viewport and report a serene, meaningless "ok".
-  if (new URL(loaded.url).origin !== new URL(url).origin) {
-    console.error(`asked for ${url} but the browser is showing ${loaded.url}`);
-    process.exitCode = 2;
-    shutdown();
-    process.exit(2);
-  }
-  // Zero, not some larger floor: a legitimate page can be a single element, and
-  // the origin check above is what catches a substituted document. This is only
-  // here for the case where the right origin answers with nothing at all.
-  if (loaded.elements === 0) {
-    console.error(`loaded ${loaded.url} but it rendered an empty body; refusing to call that a pass`);
-    process.exitCode = 2;
-    shutdown();
-    process.exit(2);
-  }
-
-  // Two studies, so the portfolio table has something to be too wide with.
-  const dropped = await evaluate(`(() => {
-    const zone = document.querySelector('.drop');
-    if (!zone) return false;
-    const xml = ${JSON.stringify(SYNTHETIC_DEFINE('AUDIT-A'))};
-    const dt = new DataTransfer();
-    dt.items.add(new File([xml], 'audit-a.xml', { type: 'text/xml' }));
-    dt.items.add(new File([xml.replace('AUDIT-A', 'AUDIT-B')], 'audit-b.xml', { type: 'text/xml' }));
-    zone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
-    return true;
-  })()`);
-  if (dropped) await sleep(2500);
-
-  const m = await evaluate(MEASURE);
-
-  if (SHOT_DIR) {
-    const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
-    writeFileSync(join(SHOT_DIR, `${vp.name}.png`), Buffer.from(shot.data, 'base64'));
-  }
-
-  const ok = !m.pageScrollsHorizontally;
-  if (!ok) failures.push({ viewport: vp.name, ...m });
-
-  console.log(
-    `${ok ? 'ok  ' : 'FAIL'} ${vp.name.padEnd(11)} ` +
-      `viewport ${String(m.layoutViewport).padStart(4)}  document ${String(m.documentWidth).padStart(4)}` +
-      (dropped ? `  studies ${m.studyRows}` : '  (no drop zone on this page)') +
-      (ok ? '' : `  <- widened by: ${m.widerThanViewport.join(', ') || 'unknown'}`),
-  );
 }
 
 if (failures.length) {
+  const pages = [...new Set(failures.map((f) => f.page))];
   console.error(
-    `\n${failures.length} of ${VIEWPORTS.length} viewports scroll sideways. ` +
-      'A document that scrolls horizontally has every element offset from the ' +
-      'viewport, so this is a page-level defect, not a cosmetic one.\n',
+    `\n${failures.length} of ${paths.length * VIEWPORTS.length} measurements scroll ` +
+      `sideways, across ${pages.length} page(s): ${pages.join(', ')}. A document that ` +
+      'scrolls horizontally has every element offset from the viewport, so this is a ' +
+      'page-level defect, not a cosmetic one.\n',
   );
   console.error(JSON.stringify(failures, null, 2));
   process.exitCode = 1;
 } else {
-  console.log(`\nNo horizontal overflow at any of ${VIEWPORTS.length} widths.`);
+  console.log(
+    `\nNo horizontal overflow: ${paths.length} page(s) x ${VIEWPORTS.length} widths, all clear.`,
+  );
 }
 
 // Explicitly, not only from the exit handler: an open WebSocket and a live
