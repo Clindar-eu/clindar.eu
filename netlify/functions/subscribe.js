@@ -30,9 +30,20 @@
 
 const crypto = require('node:crypto');
 
-// Rate limiting, crudely. This is per warm function instance, not global — an
-// attacker with patience gets around it. It exists to stop a stuck retry loop
-// or a bored script, and the ESP is the real duplicate defence.
+// Rate limiting, crudely, and DEFENCE IN DEPTH RATHER THAN A CONTROL.
+//
+// This counter lives in one warm function instance's memory. It is not shared,
+// so it is not global: a cold start hands the caller a clean slate, two
+// instances running at once give them two budgets, and scaling out multiplies
+// that by however many instances the platform decides to run. Nothing here can
+// see any of that, and nothing here should be described as though it could.
+//
+// What it is actually for is the honest short list: a stuck retry loop, a bored
+// script, a widget bug that fires on every keystroke. The shared limit that
+// would bound a determined caller has to be applied in front of this function
+// by the platform - docs/subscribe-abuse-controls.md has the configuration and
+// says plainly which parts of it are not in this repository. The provider's own
+// duplicate handling is the last line, and it is the one that actually holds.
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_WINDOW = 5;
 const MAX_TRACKED_CLIENTS = 5000;
@@ -62,15 +73,32 @@ function json(statusCode, body) {
 }
 
 /**
- * Rate-limit key. The IP is hashed with a per-instance salt and never leaves
- * memory: we need to tell callers apart for an hour, not to know who they are.
+ * Rate-limit key: a per-instance pseudonym for the caller, never an address.
+ *
+ * TRUSTED: `x-nf-client-connection-ip`, and nothing else. Netlify's edge sets it
+ * on the way in, so it describes the connection this request actually arrived
+ * on rather than the caller's opinion of it.
+ *
+ * NOT TRUSTED, AND NO LONGER READ: `x-forwarded-for`. It is a caller-supplied
+ * list, and nothing in this process can tell an entry the platform appended from
+ * one the client wrote. Taking its leftmost entry - which this did whenever the
+ * Netlify header was absent - handed every request a fresh bucket for the price
+ * of one header, which is the limiter below defeated in its entirety by anyone
+ * who thought to try. A header is trusted here only if the platform is
+ * documented to set it; "usually contains the right thing" is not that.
+ *
+ * THE ASSUMPTION, and the thing to re-check if this ever leaves Netlify:
+ * requests reach this function through an edge that sets that header. Where it
+ * is absent every caller shares the one `unknown` bucket, so the failure mode is
+ * a single shared limit rather than no limit at all - closed, not open.
+ *
+ * The IP is hashed with a salt made at instance start and never written down.
+ * Telling callers apart for an hour does not require knowing who they are, and a
+ * salt that dies with the instance cannot outlive the counter it exists for.
  */
 const salt = crypto.randomBytes(16);
 function clientKey(headers) {
-  const ip =
-    headers['x-nf-client-connection-ip'] ||
-    (headers['x-forwarded-for'] || '').split(',')[0].trim() ||
-    'unknown';
+  const ip = headers['x-nf-client-connection-ip'] || 'unknown';
   return crypto.createHash('sha256').update(salt).update(ip).digest('base64').slice(0, 16);
 }
 
@@ -169,19 +197,77 @@ function normaliseEmail(value) {
 }
 
 /**
- * Same-origin only. The page that posts here is served from this domain, so a
- * cross-origin Origin header is either a mistake or someone else's form.
- * No CORS headers are sent either, which is the other half of the same rule.
+ * The hosts a browser may post here from.
+ *
+ * TRUSTED: `host`. It is the name the platform routed this request on, so it is
+ * a name this deploy answers to; a request carrying somebody else's hostname is
+ * served by somebody else's site, or by nothing.
+ *
+ * NOT TRUSTED, AND NO LONGER READ: `x-forwarded-host`. It is caller-supplied,
+ * nothing upstream is documented to overwrite it, and it used to take precedence
+ * over `host` here - so `Origin: https://evil.example` sent with
+ * `X-Forwarded-Host: evil.example` agreed with itself and walked through the
+ * same-origin check unchallenged.
+ *
+ * The deploy's own addresses are added from Netlify's read-only environment
+ * variables, which are configuration and not request data: `URL` is the
+ * production address, `DEPLOY_PRIME_URL` the branch or preview one. That keeps
+ * deploy previews working without widening anything in production, and it means
+ * the allowlist does not depend on `host` alone.
  */
-function foreignOrigin(headers) {
+function allowedHosts(headers) {
+  const hosts = new Set();
+  if (headers.host) hosts.add(headers.host);
+  for (const name of ['URL', 'DEPLOY_PRIME_URL', 'DEPLOY_URL']) {
+    const configured = process.env[name];
+    if (!configured) continue;
+    try {
+      hosts.add(new URL(configured).host);
+    } catch {
+      // A malformed deploy URL is our configuration problem, not the caller's,
+      // and it must not be allowed to widen anything. Skipped in silence.
+    }
+  }
+  return hosts;
+}
+
+/**
+ * Whether to refuse this request on origin grounds. No CORS headers are ever
+ * sent either, which is the other half of the same rule.
+ *
+ * A MISSING ORIGIN IS NOW REFUSED, and that is a decision rather than an
+ * oversight. The only intended caller is a fetch from a page this site served,
+ * and a browser attaches Origin to every POST it makes - same-origin included,
+ * and regardless of `credentials: 'omit'`, which is how the widget calls this.
+ * So requiring the header costs a real subscriber nothing, and it removes the
+ * cheapest shape of abuse there is: the curl loop and the scripted client that
+ * send no headers they were not made to send.
+ *
+ * What it does not do is stop anyone who has read this file. `Origin:
+ * https://clindar.eu` is one more flag on the command line. This raises the
+ * floor; it is not a boundary, and nothing downstream may treat it as one.
+ *
+ * It also settles what this endpoint is: browser-only, on purpose. There is no
+ * non-browser client today - the widget is the only caller - and if one is ever
+ * wanted it gets a route and a credential of its own rather than this one
+ * loosening to admit it. Reverting the decision is deleting the two lines
+ * marked below, and it should be a deliberate act with a reason attached.
+ */
+function disallowedOrigin(headers) {
   const origin = headers.origin;
-  if (!origin) return false;
-  const host = headers['x-forwarded-host'] || headers.host;
+  // The two lines: no Origin, no service.
+  if (!origin) return true;
+
+  let host;
   try {
-    return new URL(origin).host !== host;
+    host = new URL(origin).host;
   } catch {
+    // Unparseable, and also the literal `null` origin a sandboxed frame or an
+    // opaque redirect sends. Neither is this site.
     return true;
   }
+  if (!host) return true;
+  return !allowedHosts(headers).has(host);
 }
 
 async function forwardToEsp(email) {
@@ -273,7 +359,7 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return json(405, { ok: false, error: 'method_not_allowed' });
   }
-  if (foreignOrigin(headers)) {
+  if (disallowedOrigin(headers)) {
     return json(403, { ok: false, error: 'forbidden' });
   }
   if (!(headers['content-type'] || '').includes('application/json')) {
@@ -297,16 +383,34 @@ exports.handler = async (event) => {
     return json(400, { ok: false, error: 'invalid_json' });
   }
 
+  const now = Date.now();
+  const at = hourOf(now);
+  const client = clientKey(headers);
+
   // Honeypot: a field no human sees and no real widget fills. Cheaper than a
   // captcha and it costs the visitor nothing. The response is exactly what a
   // real subscription returns — same status, same body — so a bot learns
   // nothing from having been caught, and nothing is forwarded anywhere.
-  const now = Date.now();
-  const at = hourOf(now);
-
+  //
+  // The hit is counted against the caller's budget on the way past, because a
+  // filled honeypot is abuse by definition and should cost what any other
+  // request costs. The answer never changes because of it: a honeypot that
+  // started returning 429 would be telling a bot that something is counting,
+  // which is the one thing this response exists not to say.
   if (typeof payload.company === 'string' && payload.company.trim() !== '') {
+    rateLimited(client, now);
     logEvent({ outcome: 'honeypot', at });
     return json(200, { ok: true, subscribed: true });
+  }
+
+  // Counted before the address is judged, not after. The other order let a
+  // caller hold the limiter at zero for as long as they liked by never sending
+  // a valid address: every malformed submission returned 400 without ever
+  // reaching the counter, so the budget was only ever spent by people using the
+  // endpoint properly.
+  if (rateLimited(client, now)) {
+    logEvent({ outcome: 'rate_limited', at });
+    return json(429, { ok: false, error: 'too_many_requests' });
   }
 
   const email = normaliseEmail(payload.email);
@@ -316,11 +420,6 @@ exports.handler = async (event) => {
     // would be collecting the one thing we just declined to accept.
     logEvent({ outcome: 'invalid_email', at });
     return json(400, { ok: false, error: 'invalid_email' });
-  }
-
-  if (rateLimited(clientKey(headers), now)) {
-    logEvent({ outcome: 'rate_limited', at });
-    return json(429, { ok: false, error: 'too_many_requests' });
   }
 
   const provider = providerName();

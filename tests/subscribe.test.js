@@ -12,8 +12,15 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const { handler } = require('../netlify/functions/subscribe.js');
+
+const read = (relative) => fs.readFileSync(path.join(__dirname, '..', relative), 'utf8');
+
+/** The host this deploy answers on, as Netlify would route it. */
+const SITE_HOST = 'clindar.eu';
 
 // ---------------------------------------------------------------------------
 // Harness.
@@ -42,10 +49,26 @@ function invoke(options = {}) {
     headers: {
       'content-type': 'application/json',
       'x-nf-client-connection-ip': ip,
+      // A browser posting from a page this site served, which is the only
+      // caller this endpoint has. Origin is required now, so a test that is not
+      // about origins still has to look like one.
+      host: SITE_HOST,
+      origin: `https://${SITE_HOST}`,
       ...headers,
     },
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
+}
+
+/** A body of exactly `bytes` bytes, valid apart from its size. */
+function bodyOfExactly(bytes) {
+  const empty = JSON.stringify({ email: 'reader@sponsor.example', pad: '' });
+  const body = JSON.stringify({
+    email: 'reader@sponsor.example',
+    pad: 'x'.repeat(bytes - Buffer.byteLength(empty, 'utf8')),
+  });
+  assert.equal(Buffer.byteLength(body, 'utf8'), bytes, 'the fixture is not the size it claims');
+  return body;
 }
 
 /** The provider call that a test expects, plus whatever fetch was handed. */
@@ -90,6 +113,11 @@ test.beforeEach(() => {
   delete process.env.ESP_GROUP_ID;
   // Off unless a test turns it on: the pseudonym is opt-in in production too.
   delete process.env.SUBSCRIBE_LOG_HMAC_KEY;
+  // Netlify sets these on a real deploy and they widen the accepted origins, so
+  // a test that has not asked for them must not inherit them from a shell.
+  delete process.env.URL;
+  delete process.env.DEPLOY_PRIME_URL;
+  delete process.env.DEPLOY_URL;
   // Any test that does not stub fetch should fail loudly rather than dial out.
   globalThis.fetch = async () => {
     throw new Error('the provider was contacted by a test that did not stub fetch');
@@ -514,6 +542,275 @@ test('a sixth submission from one caller within the hour is refused', async () =
   const refused = await invoke({ ip, body: { email: 'reader5@sponsor.example' } });
   assert.equal(refused.statusCode, 429);
   assert.deepEqual(JSON.parse(refused.body), { ok: false, error: 'too_many_requests' });
+});
+
+// ---------------------------------------------------------------------------
+// The trust boundary: which headers decide anything, and which are just text a
+// caller sent us.
+//
+// Every test here is a request that used to be accepted, or a budget that used
+// to be free. They are written as attacks rather than as unit tests because
+// that is the only way to tell the difference between a header being read and a
+// header being trusted.
+// ---------------------------------------------------------------------------
+
+test('a foreign origin is refused, and x-forwarded-host cannot vouch for it', async () => {
+  const cases = [
+    // The plain case, and the one that always worked.
+    { origin: 'https://evil.example' },
+    // The spoof: the caller supplies both halves of the comparison the function
+    // used to make, so the origin agrees with the "host" and walks through.
+    { origin: 'https://evil.example', 'x-forwarded-host': 'evil.example' },
+    // The same trick with the site's own name in the header, in case the check
+    // were ever reversed.
+    { origin: 'https://evil.example', 'x-forwarded-host': SITE_HOST },
+    // A subdomain is a different host. This one is worth pinning because it is
+    // the shape a takeover of a stale DNS record would take.
+    { origin: `https://staging.${SITE_HOST}` },
+    // Port matters: a different port is a different origin.
+    { origin: `https://${SITE_HOST}:8443` },
+  ];
+
+  for (const headers of cases) {
+    const result = await invoke({ headers });
+    assert.equal(result.statusCode, 403, `${JSON.stringify(headers)} was allowed`);
+    assert.deepEqual(JSON.parse(result.body), { ok: false, error: 'forbidden' });
+  }
+});
+
+test('an origin that is not a URL is refused rather than parsed generously', async () => {
+  const malformed = [
+    'not a url',
+    // The opaque origin a sandboxed frame or a cross-origin redirect sends.
+    'null',
+    'https://',
+    '://clindar.eu',
+    'javascript:alert(1)',
+    `https://${SITE_HOST} https://evil.example`,
+    '',
+  ];
+
+  for (const origin of malformed) {
+    const result = await invoke({ headers: { origin } });
+    assert.equal(result.statusCode, 403, `origin ${JSON.stringify(origin)} was allowed`);
+  }
+});
+
+test('a request with no Origin at all is refused, which is the decision on record', async () => {
+  // Documented in the function and in docs/subscribe-abuse-controls.md: the
+  // only intended caller is a browser, browsers send Origin on every POST, and
+  // there is no non-browser client to keep working. Reverting this is a
+  // deliberate act, so it is pinned here rather than left to drift.
+  const result = await handler({
+    httpMethod: 'POST',
+    headers: { 'content-type': 'application/json', host: SITE_HOST },
+    body: JSON.stringify({ email: 'reader@sponsor.example' }),
+  });
+  assert.equal(result.statusCode, 403);
+  assert.deepEqual(JSON.parse(result.body), { ok: false, error: 'forbidden' });
+});
+
+test('the deploy previews Netlify names are accepted, and only those', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+  process.env.URL = 'https://clindar.eu';
+  process.env.DEPLOY_PRIME_URL = 'https://deploy-preview-42--clindar.netlify.app';
+
+  // A preview page posting to itself, where `host` is the preview host.
+  const preview = await invoke({
+    headers: {
+      host: 'deploy-preview-42--clindar.netlify.app',
+      origin: 'https://deploy-preview-42--clindar.netlify.app',
+    },
+  });
+  assert.equal(preview.statusCode, 200);
+
+  // The production name, from a request that arrived on the preview host: the
+  // allowlist is configuration, so this is allowed on purpose.
+  const production = await invoke({
+    headers: { host: 'deploy-preview-42--clindar.netlify.app', origin: 'https://clindar.eu' },
+  });
+  assert.equal(production.statusCode, 200);
+
+  // A different preview is still a different site.
+  const other = await invoke({
+    headers: {
+      host: 'deploy-preview-42--clindar.netlify.app',
+      origin: 'https://deploy-preview-43--clindar.netlify.app',
+    },
+  });
+  assert.equal(other.statusCode, 403);
+});
+
+test('a malformed deploy URL in the environment widens nothing', async () => {
+  process.env.URL = 'not a url at all';
+  const result = await invoke({ headers: { origin: 'https://evil.example' } });
+  assert.equal(result.statusCode, 403);
+});
+
+test('varying x-forwarded-for does not buy a fresh rate-limit budget', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+  const ip = '203.0.113.90';
+
+  for (let i = 0; i < 5; i += 1) {
+    const ok = await invoke({
+      ip,
+      headers: { 'x-forwarded-for': `192.0.2.${i}` },
+      body: { email: `reader${i}@sponsor.example` },
+    });
+    assert.equal(ok.statusCode, 200, `submission ${i + 1} was refused`);
+  }
+
+  // A sixth, wearing a forwarding header nobody upstream vouches for. The
+  // function used to read the leftmost entry whenever it could, which made this
+  // request a new caller with a clean budget.
+  const refused = await invoke({
+    ip,
+    headers: { 'x-forwarded-for': '198.51.100.200, 203.0.113.90' },
+    body: { email: 'reader5@sponsor.example' },
+  });
+  assert.equal(refused.statusCode, 429);
+});
+
+test('with no platform header every caller shares one budget rather than none', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+  // No x-nf-client-connection-ip, which is what a host other than Netlify would
+  // give us. Each request forges a different x-forwarded-for; under the old
+  // fallback each of them was a separate caller with five submissions to spend.
+  const unidentified = (i) =>
+    handler({
+      httpMethod: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        host: SITE_HOST,
+        origin: `https://${SITE_HOST}`,
+        'x-forwarded-for': `192.0.2.${100 + i}`,
+      },
+      body: JSON.stringify({ email: `anon${i}@sponsor.example` }),
+    });
+
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal((await unidentified(i)).statusCode, 200, `submission ${i + 1} was refused`);
+  }
+  assert.equal((await unidentified(5)).statusCode, 429);
+});
+
+// ---------------------------------------------------------------------------
+// What the budget covers.
+// ---------------------------------------------------------------------------
+
+test('malformed submissions spend the budget too', async () => {
+  const ip = '203.0.113.120';
+  // Five rejected addresses. Under the old order these never reached the
+  // counter, so a caller could send them for ever and still have five valid
+  // submissions in hand.
+  for (let i = 0; i < 5; i += 1) {
+    const rejected = await invoke({ ip, body: { email: 'not-an-address' } });
+    assert.equal(rejected.statusCode, 400, `submission ${i + 1} was not rejected`);
+  }
+
+  const refused = await invoke({ ip, body: { email: 'reader@sponsor.example' } });
+  assert.equal(refused.statusCode, 429);
+  assert.deepEqual(JSON.parse(refused.body), { ok: false, error: 'too_many_requests' });
+});
+
+test('a honeypot hit is counted, and the honeypot never answers 429', async () => {
+  const logs = captureLogs();
+  const ip = '203.0.113.130';
+  try {
+    // Well past the limit, and every one of them gets the answer a successful
+    // subscription gets. A 429 here would tell a bot that something upstream is
+    // counting, which is the one thing this response exists not to say.
+    for (let i = 0; i < 8; i += 1) {
+      const result = await invoke({
+        ip,
+        body: { email: 'reader@sponsor.example', company: 'Acme Corp' },
+      });
+      assert.equal(result.statusCode, 200, `honeypot hit ${i + 1} was answered differently`);
+      assert.deepEqual(JSON.parse(result.body), { ok: true, subscribed: true });
+    }
+  } finally {
+    logs.restore();
+  }
+
+  // The hits were counted all the same: a real submission from the same caller
+  // is now out of budget. Nothing was forwarded, so fetch was never needed.
+  const refused = await invoke({ ip, body: { email: 'reader@sponsor.example' } });
+  assert.equal(refused.statusCode, 429);
+});
+
+// ---------------------------------------------------------------------------
+// The body and its content type, at the boundary rather than near it.
+// ---------------------------------------------------------------------------
+
+test('the body limit is exact', async () => {
+  stubFetch(() => response(200, '{"data":{}}'));
+
+  const atTheLimit = await invoke({ body: bodyOfExactly(2048) });
+  assert.equal(atTheLimit.statusCode, 200);
+
+  const overIt = await invoke({ body: bodyOfExactly(2049) });
+  assert.equal(overIt.statusCode, 413);
+  assert.deepEqual(JSON.parse(overIt.body), { ok: false, error: 'payload_too_large' });
+});
+
+test('an oversized base64 body is measured after decoding, not before', async () => {
+  const raw = bodyOfExactly(4096);
+  const result = await handler({
+    httpMethod: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-nf-client-connection-ip': freshIp(),
+      host: SITE_HOST,
+      origin: `https://${SITE_HOST}`,
+    },
+    body: Buffer.from(raw, 'utf8').toString('base64'),
+    isBase64Encoded: true,
+  });
+  assert.equal(result.statusCode, 413);
+});
+
+test('anything but JSON is refused, including no content type at all', async () => {
+  const types = [
+    'text/plain',
+    'application/x-www-form-urlencoded',
+    'multipart/form-data; boundary=x',
+    'text/html',
+    undefined,
+    '',
+  ];
+
+  for (const type of types) {
+    const result = await invoke({ headers: { 'content-type': type } });
+    assert.equal(result.statusCode, 415, `content-type ${JSON.stringify(type)} was accepted`);
+    assert.deepEqual(JSON.parse(result.body), { ok: false, error: 'unsupported_media_type' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// What the limiter is allowed to claim about itself.
+//
+// Prose, asserted, because the risk here is not a broken counter - it is a
+// counter that reads as a control it is not, and a reader who plans around it.
+// ---------------------------------------------------------------------------
+
+test('the in-memory limiter is documented as per-instance and never as global', () => {
+  const fn = read('netlify/functions/subscribe.js');
+
+  assert.match(fn, /not shared/i, 'the limiter no longer says it is unshared');
+  assert.match(fn, /cold start/i, 'the cold-start reset is no longer named');
+  assert.ok(
+    fn.includes('docs/subscribe-abuse-controls.md'),
+    'the function no longer points at the checklist that carries the real limit',
+  );
+
+  const doc = read('docs/subscribe-abuse-controls.md');
+  assert.match(doc, /cold start/i, 'the checklist no longer names the cold-start reset');
+  assert.match(doc, /## Remaining bypasses/i, 'the checklist no longer lists what gets through');
+  assert.match(
+    doc,
+    /\/\.netlify\/functions\/subscribe/,
+    'the checklist no longer names the path that stays reachable',
+  );
 });
 
 // ---------------------------------------------------------------------------

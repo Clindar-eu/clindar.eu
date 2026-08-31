@@ -6,7 +6,8 @@ then what has to be arranged outside the code for `/impact/privacy/` to stay
 true. The second list is longer, and no test can check any of it.
 
 Companion documents: `docs/email-capture.md` for the product decision and the
-provider setup, `/impact/privacy/` for what a reader is told.
+provider setup, `docs/subscribe-abuse-controls.md` for the abuse controls around
+the same endpoint, `/impact/privacy/` for what a reader is told.
 
 ---
 

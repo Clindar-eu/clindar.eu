@@ -34,10 +34,12 @@ was. This is the correction and the configuration it needs.
    The honeypot field `company` is added only if something filled it, which no
    human can.
 5. **The endpoint.** `netlify/functions/subscribe.js` rejects non-POST,
-   cross-origin, non-JSON, oversized and malformed bodies; absorbs honeypot
-   hits; validates and normalises the address; rate-limits per caller; and
-   forwards the address to one provider. Then it stops. It composes no email,
+   cross-origin, origin-less, non-JSON, oversized and malformed bodies; absorbs
+   honeypot hits; rate-limits per caller; validates and normalises the address;
+   and forwards it to one provider. Then it stops. It composes no email,
    renders no template, and holds nothing to personalise one with.
+   `docs/subscribe-abuse-controls.md` has the threat model behind those guards,
+   the Netlify configuration they depend on, and the bypasses that remain.
 6. **The log.** One aggregate line — event, provider, outcome, hour — and no
    address. `docs/data-handling.md` has the full field list, the optional
    `SUBSCRIBE_LOG_HMAC_KEY` pseudonym, and the retention checklist.
