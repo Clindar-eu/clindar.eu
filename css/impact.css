@@ -1,8 +1,8 @@
 /* ===== SDTMIG v4.0 Impact Scanner — landing and privacy pages =====
  *
  * Loaded after style.css and using its tokens. Only what those two pages need
- * that the homepage does not: the drop zone, the prose column, and the
- * verification steps.
+ * that the homepage does not: the hero call to action, the prose column, and
+ * the verification steps.
  */
 
 /* ===== Above the fold ===== */
@@ -35,53 +35,23 @@
   color: var(--color-text-muted);
 }
 
-/* ===== Drop zone ===== */
-/* A link, not a file input. The scanner one screen away does the reading, and
-   handing a Define-XML between two pages would mean putting it somewhere —
-   which is exactly what this product promises never to do. */
-.dropzone {
-  display: block;
-  padding: 2.5rem 1.5rem;
-  border: 2px dashed rgba(255, 255, 255, 0.35);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  text-decoration: none;
-  color: var(--color-text-white);
-  transition: border-color var(--transition), background var(--transition);
-}
-
-.dropzone:hover,
-.dropzone:focus-visible {
-  /* Literal, not --color-accent-light: that token is the pale hover fill for
-     light backgrounds and would read as near-white against the navy here. */
-  border-color: #7fb2f5;
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.dropzone__mark {
-  display: block;
-  margin: 0 auto 0.75rem;
-  width: 32px;
-  height: 32px;
-  color: #7fb2f5;
-}
-
-.dropzone__mark svg {
-  width: 100%;
-  height: 100%;
-}
-
-.dropzone__label {
-  display: block;
+/* ===== The way in ===== */
+/* Two lines and a button, and deliberately nothing that reads as a file
+   target: no dashed border, no upload arrow, no hover state that invites a
+   drag. This page has no file input and no drop handler, because handing a
+   Define-XML between two pages would mean putting it somewhere — which is
+   exactly what this product promises never to do. The reading happens on
+   /scanner/, and this says so before the click rather than after it. */
+.impact-hero__lead {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
 
-.dropzone__hint {
-  display: block;
+.impact-hero__sub {
   font-size: 0.9375rem;
   color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
 }
 
 /* ===== Sections ===== */

@@ -401,9 +401,9 @@ ${sections}
       <div class="impact-cta__container">
         <h2 class="impact-cta__title">See which of these apply to you</h2>
         <p class="impact-cta__body">
-          Drop in a Define-XML. The scanner runs every rule above against it in
-          your browser and tells you which ones fire, on which datasets and
-          variables.
+          Open the scanner, then select or drop in a Define-XML file. It runs
+          every rule above against it in your browser and tells you which ones
+          fire, on which datasets and variables.
         </p>
         <a href="/scanner/" class="btn btn--primary">Open the scanner</a>
       </div>
@@ -526,9 +526,9 @@ ${relatedBlock}
       <div class="impact-cta__container">
         <h2 class="impact-cta__title">Does this one apply to your studies?</h2>
         <p class="impact-cta__body">
-          Drop in a Define-XML and find out, along with the other
-          ${catalogue.rules.length - 1} rules. It runs in your browser; the file
-          is never uploaded.
+          Open the scanner, then select or drop in a Define-XML file. It checks
+          this rule and the other ${catalogue.rules.length - 1} in your browser;
+          the file is never uploaded.
         </p>
         <a href="/scanner/" class="btn btn--primary">Open the scanner</a>
       </div>
