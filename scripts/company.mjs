@@ -17,7 +17,7 @@
  */
 
 export const COMPANY = {
-  legalName: 'UAB Clindar',
+  legalName: 'Clindar, UAB',
   registrationCode: '308107046',
   streetAddress: 'Laisvės pr. 78-11',
   postalCode: 'LT-05263',
