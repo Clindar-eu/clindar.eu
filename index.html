@@ -8,6 +8,28 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+  <!-- The registered entity behind this site. A data block, not code: it is
+       type="application/ld+json", so the page's script-src does not apply and
+       nothing here executes. Homepage only — every other page states the same
+       identity as visible text in its footer. Kept in step with
+       scripts/company.mjs by tests/company-details.test.js. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Clindar, UAB",
+    "url": "https://clindar.eu/",
+    "email": "mailto:info@clindar.eu",
+    "identifier": "308107046",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Laisvės pr. 78-11",
+      "postalCode": "LT-05263",
+      "addressLocality": "Vilnius",
+      "addressCountry": "LT"
+    }
+  }
+  </script>
   <!-- Privacy-friendly analytics by Plausible -->
   <script async src="https://plausible.io/js/pa-WhKMe5ICB0v2ZRIIDNduc.js"></script>
   <script src="js/plausible-init.js"></script>
@@ -310,6 +332,20 @@
           <button class="btn btn--primary btn--full" type="submit">Send Message</button>
           <p class="contact__success" id="formSuccess" aria-live="polite" hidden>Thanks — we'll be in touch soon.</p>
         </form>
+
+        <!-- Who you are actually writing to. "Registered office" and not
+             "office" or "visit us": it is the address the company is
+             registered at, which says nothing about anyone being there to
+             receive callers. -->
+        <div class="contact__company">
+          <h3 class="contact__company-heading">Registered company details</h3>
+          <address class="contact__address">
+            Clindar, UAB<br />
+            Company code 308107046<br />
+            Registered office: Laisvės pr. 78-11, LT-05263 Vilnius, Lithuania<br />
+            <a href="mailto:info@clindar.eu">info@clindar.eu</a>
+          </address>
+        </div>
       </div>
     </section>
 
@@ -346,6 +382,7 @@
     </div>
     <div class="footer__bottom">
       <p class="footer__copy">&copy; 2026 Clindar. All rights reserved.</p>
+      <p class="footer__company">Clindar, UAB · Company code 308107046 · Laisvės pr. 78-11, LT-05263 Vilnius, Lithuania</p>
     </div>
   </footer>
 

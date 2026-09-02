@@ -571,6 +571,37 @@ body {
   border-radius: var(--border-radius);
 }
 
+/* ===== Registered company details ===== */
+/* Same card as the privacy notice above, because it is the same kind of thing:
+   small print that has to be legible rather than prominent. */
+.contact__company {
+  margin-top: 2rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.contact__company-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 0.625rem;
+}
+
+.contact__address {
+  /* <address> is italic by default, which no other type on this site is. */
+  font-style: normal;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  overflow-wrap: break-word;
+}
+
+.contact__address a {
+  color: var(--color-accent);
+}
+
 .contact__success {
   text-align: center;
   color: var(--color-success);
@@ -744,6 +775,19 @@ body {
   font-size: 0.8125rem;
   color: rgba(148, 163, 184, 0.5);
   text-align: center;
+}
+
+/* The registered entity, on every page. Readable rather than decorative — it
+   is there to be identified — so it takes the full muted token instead of the
+   copyright line's half-transparent one. Quieter than the footer navigation
+   above it, and it wraps instead of pushing a narrow screen sideways. */
+.footer__company {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  text-align: center;
+  overflow-wrap: break-word;
 }
 
 @media (min-width: 640px) {
