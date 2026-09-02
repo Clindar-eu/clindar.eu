@@ -21,6 +21,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 
+import { REGISTERED_LINE } from './company.mjs';
+
 const SITE_ORIGIN = 'https://clindar.eu';
 
 // What gets published, and what does not.
@@ -201,6 +203,7 @@ ${body}
     </div>
     <div class="footer__bottom">
       <p class="footer__copy">&copy; 2026 Clindar. All rights reserved.</p>
+      <p class="footer__company">${REGISTERED_LINE}</p>
     </div>
   </footer>
 
