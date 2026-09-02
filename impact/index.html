@@ -94,20 +94,38 @@
       <div class="impact-section__container impact-section__container--narrow">
         <h2 class="impact-section__title">The file does not leave your browser</h2>
         <p class="impact-prose">
-          This is enforced, not promised. The scanner page is served with a
-          Content-Security-Policy that permits exactly one connection target:
-          this domain. No analytics script, no font host, no error reporter, no
-          CDN. There is no origin it could send a Define-XML to, and no code on
-          the page that tries.
+          Two separate controls hold that up, and which does what is worth
+          knowing. The first is the browser's. The scanner page is served with a
+          Content-Security-Policy whose
+          <span class="impact-code">connect-src</span> is
+          <span class="impact-code">'self'</span>, so the browser refuses any
+          connection to a third-party origin: no analytics service, no font
+          host, no error reporter, no CDN.
         </p>
         <p class="impact-prose">
-          The only request the page ever makes is the email address you type in,
-          after your score is on screen, if you want the written report. That
-          one goes to a path on this domain and nowhere else.
+          The second is the code, and it is needed because the first does not
+          cover everything. That policy still permits requests back to this
+          domain — so what keeps your Define-XML out of one is that the scanner
+          never builds one. Its own code calls
+          <span class="impact-code">fetch</span> nowhere, so scanning itself
+          makes no network request, and the requests that load it carry nothing
+          of yours: they are the same files every visitor gets.
         </p>
         <p class="impact-prose">
-          You do not have to take our word for any of it. Open devtools, watch
-          the network panel while you scan, and read the response headers.
+          After that, one request can happen: the email address you type in, if
+          you join the catalogue mailing list once your score is on screen. It
+          goes to a path on this domain and carries the address and nothing
+          else.
+        </p>
+        <p class="impact-prose">
+          Your report is not emailed, because it is never ours to email. It is
+          written in the tab that scanned the file and downloads straight out of
+          it — HTML, Markdown or JSON, free, and behind no form.
+        </p>
+        <p class="impact-prose">
+          You do not have to take our word for either half. Open devtools, read
+          the response headers for the policy, and watch the network panel stay
+          silent while you scan.
         </p>
         <p>
           <a class="btn btn--secondary" href="/impact/privacy/" data-plausible-event="Privacy checked" data-plausible-from="privacy-section">How to verify it in two minutes</a>

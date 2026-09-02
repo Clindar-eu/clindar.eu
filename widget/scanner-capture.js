@@ -7,9 +7,24 @@
  *
  * The contract it keeps, and the reason the privacy page can say what it says:
  * the only thing this widget ever sends is the address typed into its input.
+ * The scanner's CSP is what stops a third-party origin being reachable; this
+ * file is what stops the one reachable origin receiving anything of the
+ * reader's. The second half is not enforced by anything but the code below.
  * It reads no scan result, no file name, no study identifier. The event that
  * reveals it may carry a score in `detail` — that is used to decide whether to
  * appear, and is never read into the request body.
+ *
+ * WHAT IT OFFERS, AND WHY. Because it sends no scan context, nobody downstream
+ * could write a personalised report even in principle — so it does not offer
+ * one. The report is generated in this tab and downloaded from it, free and
+ * ungated. What the form buys is a mailing list: the SDTMIG v4.0 change
+ * checklist and catalogue updates, which are the same for every subscriber and
+ * need nothing about your study to produce.
+ *
+ * Consequently the confirmation says the address was added, not that an email
+ * is coming. The endpoint knows a provider accepted an address; it does not
+ * know that anything was ever delivered, and neither does this widget. See
+ * docs/email-capture.md.
  *
  * Integration: docs/scanner-integration.md in the site repo.
  */
@@ -22,21 +37,34 @@
   var PRIVACY_URL = '/impact/privacy/';
 
   var COPY = {
-    heading: 'Get the full written report',
+    heading: 'Follow the v4.0 rules catalogue',
     body:
-      'The score is yours already. The written report — every finding, what changes, ' +
-      'and what to do about it — goes to your inbox.',
+      'The full report is already yours — download it as HTML, Markdown or JSON ' +
+      'from the study detail on this page. This is the mailing list beside it: ' +
+      'the SDTMIG v4.0 change checklist, and a note when a rule in the ' +
+      'catalogue changes.',
     label: 'Work email',
-    submit: 'Send me the report',
-    sending: 'Sending…',
-    done: 'Check your inbox.',
-    doneBody: 'The report is on its way. Nothing else was sent.',
+    submit: 'Join the list',
+    sending: 'Adding…',
+    done: 'Added to the list.',
+    doneBody:
+      'Your address is with our email provider now, and everything it sends ' +
+      'carries an unsubscribe link. Nothing about this scan went with it — the ' +
+      'report stays here, on this page.',
+    // Shown when the endpoint reports that no provider was contacted. It is a
+    // misconfiguration notice, not a confirmation, and it is deliberately the
+    // opposite of reassuring: nothing was stored and nothing will arrive.
+    dev: 'Development mode — nothing was sent.',
+    devBody:
+      'This deploy has no email provider configured, so the address was ' +
+      'discarded and no email will arrive. Set ESP_PROVIDER before anyone sees ' +
+      'this. A configured deploy never shows this message.',
     note: 'Your Define-XML never left this browser. Only the address above does.',
     privacy: 'How to verify that',
     errors: {
       invalid_email: 'That address does not look right. Check it and try again.',
       too_many_requests: 'Too many attempts from here. Try again in an hour.',
-      delivery_failed: 'We could not record that just now. Try again shortly.',
+      subscribe_failed: 'We could not add that address just now. Try again shortly.',
       network: 'No response. Check your connection and try again.',
     },
   };
@@ -49,7 +77,7 @@
   }
 
   function message(code) {
-    return COPY.errors[code] || COPY.errors.delivery_failed;
+    return COPY.errors[code] || COPY.errors.subscribe_failed;
   }
 
   function build(instance) {
@@ -137,14 +165,26 @@
     instance.input.removeAttribute('aria-invalid');
   }
 
-  function succeed(instance) {
+  /**
+   * `data.subscribed === false` is the endpoint saying it contacted no
+   * provider — development mode. That is not a success to a visitor and must
+   * never be dressed as one, so it gets the warning panel instead.
+   *
+   * Nothing here claims an email was delivered. The endpoint cannot know that,
+   * so the widget cannot say it.
+   */
+  function succeed(instance, data) {
+    var subscribed = !(data && data.subscribed === false);
     var done = el('div', 'clindar-capture__done');
-    done.appendChild(el('h2', 'clindar-capture__heading', COPY.done));
-    done.appendChild(el('p', 'clindar-capture__body', COPY.doneBody));
+    if (!subscribed) done.className += ' clindar-capture__done--unsent';
+    done.appendChild(el('h2', 'clindar-capture__heading', subscribed ? COPY.done : COPY.dev));
+    done.appendChild(el('p', 'clindar-capture__body', subscribed ? COPY.doneBody : COPY.devBody));
     instance.root.textContent = '';
     instance.root.appendChild(done);
     instance.state = 'done';
-    if (typeof instance.options.onSuccess === 'function') instance.options.onSuccess();
+    if (typeof instance.options.onSuccess === 'function') {
+      instance.options.onSuccess({ subscribed: subscribed });
+    }
   }
 
   function submitForm(instance) {
@@ -186,7 +226,7 @@
       })
       .then(function (result) {
         if (result.data && result.data.ok) {
-          succeed(instance);
+          succeed(instance, result.data);
           return;
         }
         showError(instance, message(result.data && result.data.error));

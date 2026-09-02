@@ -6,13 +6,23 @@
   <title>Scanner privacy — what leaves your browser, and how to check — Clindar</title>
   <meta name="description" content="What the SDTMIG v4.0 Impact Scanner reads, what it sends, and how to verify both from your own devtools in about two minutes." />
   <link rel="canonical" href="https://clindar.eu/impact/privacy/" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preload" href="/css/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/css/fonts.css" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/impact.css" />
   <!-- No analytics on this page. A page that explains what a site does not
-       send should not itself be sending anything. -->
+       send should not itself be sending anything.
+
+       That applies to the fonts too, which is why this page links no Google
+       Fonts stylesheet while the rest of the site still does. The old <link>
+       was a third-party request on the one page whose job is to be checkable,
+       and it disclosed the reader's IP to Google to render the paragraph
+       telling them nothing is disclosed to anyone. The faces are the same; they
+       are served from this origin now — see /css/fonts.css.
+
+       This page's headers block in netlify.toml drops fonts.googleapis.com and
+       fonts.gstatic.com, so the claim is enforced by the browser rather than
+       resting on nobody re-adding the tag. -->
 </head>
 <body>
 
@@ -40,7 +50,7 @@
           reads, what it transmits, and how to confirm both from your own
           devtools without trusting a word of it.
         </p>
-        <p class="impact-pagehead__meta">Applies to <span class="impact-code">clindar.eu/scanner</span>. Last reviewed 25 August 2026.</p>
+        <p class="impact-pagehead__meta">Applies to <span class="impact-code">clindar.eu/scanner</span>. Last reviewed 31 August 2026.</p>
       </div>
     </section>
 
@@ -50,14 +60,26 @@
         <p class="impact-prose">
           The Define-XML you drop in is parsed by JavaScript running in your
           browser tab. It is not uploaded, not proxied, not queued, and not
-          logged. It is never sent anywhere, because the page it runs on is
-          served with a policy that leaves it nowhere to send it.
+          logged. Two controls keep that true and they are different in kind: the
+          page's Content-Security-Policy stops the browser opening a connection
+          to any third-party origin, and the scanner's own code makes no request
+          containing your file, its contents, its name, a study identifier or a
+          result. The first your browser enforces whatever we do; the second is
+          a fact about source code, and the section below is how to watch it
+          rather than believe it.
         </p>
         <p class="impact-prose">
           One thing can leave, and only if you type it: an email address, after
-          your score is on screen, if you want the written report. It goes to
+          your score is on screen, if you join our rules-catalogue mailing list.
+          It goes to
           <span class="impact-code">/.netlify/functions/subscribe</span> on this
           domain. Nothing about your scan goes with it.
+        </p>
+        <p class="impact-prose">
+          Your report does not travel either — in either direction. It is
+          written by the same JavaScript that read your file and downloads out
+          of the tab as HTML, Markdown or JSON. We never receive it, which is
+          also why we cannot email it to you and do not offer to.
         </p>
       </div>
     </section>
@@ -100,23 +122,66 @@
           this Content-Security-Policy header:
         </p>
         <p class="impact-prose">
-          <span class="impact-code">default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'</span>
+          <span class="impact-code">default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'</span>
         </p>
         <p class="impact-prose">
           <strong>connect-src 'self'</strong> is the directive that matters.
           It means the page's JavaScript can open a network connection to
           exactly one origin — this one — and to no other. Not to an analytics
-          service, not to a font host, not to a CDN, not to an error reporter,
-          not to us by any other route. A browser enforces this; it is not a
-          setting the page can opt out of.
+          service, not to a font host, not to a CDN, not to an error reporter.
+          A browser enforces this; it is not a setting the page can opt out of.
         </p>
         <p class="impact-prose">
-          The same page also loads no third-party script of any kind. The
-          scanner's own JavaScript, its stylesheet and the email capture widget
-          all come from this domain. Our marketing pages do use
+          <strong>And here is what it does not do.</strong> It does not stop the
+          page making a request to this origin.
+          <span class="impact-code">'self'</span> draws the boundary around
+          third parties, not around us. So the policy on its own is not the
+          reason your Define-XML stays in the tab: it rules out every
+          destination but one, and something else has to rule out that one. A
+          page that stopped explaining here would be overstating its case.
+        </p>
+        <p class="impact-prose">
+          <strong>Why that says 'self' and not 'none'.</strong>
+          <span class="impact-code">connect-src 'none'</span> is the stricter
+          directive — it permits no network connection at all, and it is what
+          this page would carry if the scanner did nothing but score your file.
+          It says <span class="impact-code">'self'</span> for one reason: the
+          mailing-list signup that appears under your score needs a request to
+          somewhere, and that somewhere is a path on this domain. We would
+          rather tell you that than quietly ship the weaker policy and keep
+          describing the stronger one.
+        </p>
+        <p class="impact-prose">
+          <strong>What the code does with the destination that is left.</strong>
+          Nothing. The scanner's own JavaScript contains no
+          <span class="impact-code">fetch</span> call: it reads the file with
+          the File API, parses it in a Worker bundled into its own assets, and
+          renders the result from memory. The only code on the page that makes a
+          request at all is the email widget, and the body of that request is the
+          address you typed — plus a hidden honeypot field, on the rare occasion
+          something automated fills one in. Your Define-XML is not in it. Neither
+          is its name, a study identifier, a score, a band or a rule id; none of
+          them is ever read into anything that could put them there.
+        </p>
+        <p class="impact-prose">
+          That is a statement about what the source code does, not about what a
+          header forbids, and the two deserve different amounts of trust. A
+          header you can read off the wire in ten seconds. Code you have to
+          watch — so the next section is five minutes of watching it, with
+          nothing taken on our word.
+        </p>
+        <p class="impact-prose">
+          The same page also makes no third-party request of any kind — not a
+          script, not a stylesheet, not a font. The scanner's own JavaScript,
+          its stylesheet, the email capture widget and the typefaces you are
+          reading this in all come from this domain. Our marketing pages are
+          different: they use
           <a href="https://plausible.io/privacy" rel="noopener">Plausible</a>,
-          a cookieless analytics service — the scanner does not, and neither
-          does this page.
+          a cookieless analytics service, and they load their fonts from Google.
+          The scanner does neither, and neither does this page. That is the
+          whole reason this page serves its own copy of the fonts rather than
+          linking them: a page arguing that nothing reaches a third party should
+          not reach one to render the argument.
         </p>
       </div>
     </section>
@@ -140,28 +205,46 @@
             tag in the page source, which the browser enforces as well.
           </li>
           <li>
-            <strong>Watch the scan.</strong> Leave the Network tab open, tick
-            "Preserve log", and drop in a Define-XML. Nothing new appears. No
-            XHR, no fetch, no beacon, no image request with your data hidden in
-            the query string. The score arrives with no network activity at all,
+            <strong>Watch the scan.</strong> Loading the page is itself network
+            activity: you will see the HTML, the scripts, the worker chunk and
+            the stylesheet arrive, which is every visitor collecting the same
+            files. Let that settle. Then tick "Preserve log" and drop in a
+            Define-XML. <strong>Nothing further appears.</strong> No XHR, no
+            fetch, no beacon, no image request with your data hidden in the
+            query string. The score arrives without a single new request,
             because the work happened in the tab.
           </li>
           <li>
-            <strong>Try to break it.</strong> If you want to be certain the
-            policy is doing the work rather than the page merely behaving, open
-            the Console and run
+            <strong>Test the policy — then test the gap in it.</strong> In the
+            Console, run
             <span class="impact-code">fetch('https://example.com')</span>. The
-            browser refuses it and says why. That refusal is what stands between
-            your Define-XML and the internet.
+            browser refuses it and says why: that is
+            <span class="impact-code">connect-src 'self'</span> closing off
+            every third-party destination. Now run
+            <span class="impact-code">fetch('/impact/privacy/')</span>. That one
+            succeeds — same-origin requests are permitted, and any honest
+            reading of the policy has to say so. What keeps your Define-XML out
+            of a request to this origin is therefore not the header. It is that
+            the scanner holds no code that would build one, which is what the
+            step above let you watch.
           </li>
           <li>
-            <strong>Watch the one request that does happen.</strong> If you ask
-            for the written report, a single
+            <strong>Watch the one request that can happen.</strong> If you join
+            the mailing list, a single
             <span class="impact-code">POST</span> to
             <span class="impact-code">/.netlify/functions/subscribe</span>
             appears. Click it and read the request payload: it is
             <span class="impact-code">{"email":"…"}</span> and nothing else — no
-            file name, no study identifier, no score, no rule ids.
+            file name, no study identifier, no score, no rule ids. It is the only
+            request the page can make after it has loaded, and it happens only
+            because you asked for it.
+          </li>
+          <li>
+            <strong>Download the report and watch nothing happen.</strong> Click
+            "Download HTML report". The file appears with no network request
+            behind it, because the page built it from what was already in
+            memory. That is the same fact from the other side: a document we
+            never receive is a document we cannot email you.
           </li>
         </ol>
         <p class="impact-prose">
@@ -178,23 +261,35 @@
         <dl class="impact-facts">
           <div>
             <dt>What is collected</dt>
-            <dd>The email address you type, and the hour it arrived. Nothing else is recorded: no IP address, no browser, no referrer, no scan result.</dd>
+            <dd>The email address you type. It goes to our email service provider and is stored there, which is what a mailing list is; that is the only place a copy lives on purpose.</dd>
+          </div>
+          <div>
+            <dt>What our own endpoint writes down</dt>
+            <dd>One line per request: the event name, which provider was used, how it turned out — subscribed, failed, rate-limited — and the hour. Not the address. Not your IP address, your browser, the page you came from, or anything you scanned. The address is passed to the provider and dropped; it is never handed to a logging call at all, so there is no redaction step that could one day be forgotten.</dd>
+          </div>
+          <div>
+            <dt>Telling repeat attempts apart</dt>
+            <dd>If we ever have to distinguish one address retrying forty times from forty addresses arriving once, the endpoint can log a keyed HMAC of the address in place of the address: a short string that cannot be turned back into an email without a secret that never leaves the server and is never printed. It is off unless a specific operational question needs it, and rotating that secret makes every identifier already written unlinkable to any written after.</dd>
           </div>
           <div>
             <dt>Why</dt>
-            <dd>To send you the written report you asked for, and to tell you when the rules catalogue changes in a way that affects your studies.</dd>
+            <dd>To send you the SDTMIG v4.0 change checklist, and to tell you when the rules catalogue changes. It is a mailing list: every subscriber receives the same emails, because your scan is not something we hold and could tailor them to.</dd>
+          </div>
+          <div>
+            <dt>What is never sent to you</dt>
+            <dd>Your scan report. It is produced in your browser and downloaded from it, and no copy reaches us — so no email we send can contain it, whatever you subscribe to.</dd>
           </div>
           <div>
             <dt>Legal basis</dt>
-            <dd>Consent, GDPR Article 6(1)(a). You gave it by typing the address and asking for the report. Withdraw it at any time with the unsubscribe link on every email, or by writing to us.</dd>
+            <dd>Consent, GDPR Article 6(1)(a). You gave it by typing the address and asking to join the list. Withdraw it at any time with the unsubscribe link on every email, or by writing to us.</dd>
           </div>
           <div>
             <dt>Who else sees it</dt>
-            <dd>Our email service provider, as a processor, for delivery only. It is never sold, never shared for anyone else's marketing, and never joined to anything you scanned — we do not have that to join it to.</dd>
+            <dd>Our email service provider, as a processor, which stores the address and sends the list. It is never sold, never shared for anyone else's marketing, and never joined to anything you scanned — we do not have that to join it to.</dd>
           </div>
           <div>
             <dt>How long</dt>
-            <dd>Until you unsubscribe, or after two years without a single opened email, whichever comes first.</dd>
+            <dd>Until you unsubscribe, or after two years without a single opened email, whichever comes first. That is a retention rule configured at the email provider rather than something our code enforces, so it is a commitment we keep by administration — ask and we will tell you what it is currently set to.</dd>
           </div>
           <div>
             <dt>Your rights</dt>
@@ -202,7 +297,11 @@
           </div>
           <div>
             <dt>Rate limiting</dt>
-            <dd>The endpoint counts recent submissions per caller for an hour, keyed by a salted hash of the IP address held in memory only. The address itself is never written down and the salt is discarded when the process restarts.</dd>
+            <dd>The endpoint counts recent submissions per caller for an hour, keyed by a salted hash of the IP address, held in memory and nowhere else. Your IP address itself is never written down, the salt is random per process and discarded when the process restarts, and the counts go with it. Nothing about this is logged.</dd>
+          </div>
+          <div>
+            <dt>Infrastructure logs</dt>
+            <dd>Our hosting platform keeps request logs of its own, as every web host does. We will not tell you what a platform records by default, because that is its behaviour and not something we can show you in our source code. We treat it as something to configure rather than something to claim: retention is kept short, access is limited to people who need it, and a deletion request is actioned against the provider's stored data and any operational log still in hand. If a DPIA needs the current retention period in writing, ask and you will get the figure we have set.</dd>
           </div>
         </dl>
         <p class="impact-prose">

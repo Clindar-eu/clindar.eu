@@ -1,0 +1,101 @@
+# Fails a pull request whose pages scroll sideways on a phone.
+#
+# WHY THE DEPLOY PREVIEW AND NOT A BUILD IN THIS JOB. The scanner is a private
+# submodule, so building it here would mean holding a deploy key in Actions
+# secrets - a second credential to store, rotate and eventually leak - in order
+# to produce a worse test. Netlify has already built the real artifact by the
+# time this runs, headers and all, and that is the thing worth measuring. This
+# job therefore checks out the site WITHOUT submodules and needs no secret of
+# any kind.
+#
+# The check itself is scripts/audit-responsive.mjs; the reasoning about why it
+# uses device emulation rather than a small window lives there.
+name: responsive
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Base URL to audit
+        required: true
+        default: https://clindar.eu
+
+permissions:
+  contents: read
+  statuses: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # This job never builds the scanner, it only measures the deployed
+          # page. Which is precisely why it needs no access to the private
+          # submodule.
+          submodules: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Wait for the deploy preview
+        if: github.event_name == 'pull_request'
+        id: preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # Netlify reports the preview as a commit status, and its build starts
+          # at roughly the same moment as this job, so this waits rather than
+          # races. A status that never arrives is a failure and not a pass: this
+          # check exists to hold an opinion, and it cannot hold one about a page
+          # that was never deployed.
+          # Everything is extracted through `gh api --jq`, which uses gh's own
+          # built-in jq. Shelling out to a separate jq would add a dependency
+          # this job does not otherwise have, on the strength of it happening to
+          # be installed.
+          for attempt in $(seq 1 60); do
+            line=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/status" \
+              --jq '[.statuses[]
+                     | select(.context | startswith("netlify/"))
+                     | select(.context | endswith("deploy-preview"))][0]
+                    | if . == null then "missing " else "\(.state) \(.target_url // "")" end' \
+              2>/dev/null || echo 'missing ')
+
+            state=${line%% *}
+            url=${line#* }
+
+            case "$state" in
+              success)
+                if [ -z "$url" ]; then
+                  echo "::error::the deploy preview succeeded but reported no URL"
+                  exit 1
+                fi
+                echo "url=$url" >> "$GITHUB_OUTPUT"
+                echo "auditing $url"
+                exit 0
+                ;;
+              failure|error)
+                echo "::error::the Netlify deploy preview failed, so there is nothing to audit"
+                exit 1
+                ;;
+              *)
+                echo "deploy preview is '$state' (attempt $attempt/60), waiting"
+                sleep 15
+                ;;
+            esac
+          done
+          echo "::error::no Netlify deploy-preview status arrived within 15 minutes"
+          exit 1
+
+      - name: Audit the deploy preview
+        if: github.event_name == 'pull_request'
+        run: node scripts/audit-responsive.mjs "${{ steps.preview.outputs.url }}"
+
+      - name: Audit a URL given by hand
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/audit-responsive.mjs "${{ inputs.url }}"

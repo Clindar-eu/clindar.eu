@@ -117,6 +117,14 @@
   opacity: 0;
 }
 
+/* The endpoint contacted no provider, so this is a misconfiguration notice
+   and not a confirmation. Same red as a validation error, for the same reason:
+   nobody should read it as the happy path. */
+.clindar-capture__done--unsent .clindar-capture__heading,
+.clindar-capture__done--unsent .clindar-capture__body {
+  color: var(--cc-error);
+}
+
 .clindar-capture__error {
   margin: 10px 0 0;
   font-size: 13.5px;

@@ -1,0 +1,74 @@
+/* Self-hosted Inter and JetBrains Mono.
+ *
+ * Loaded by /impact/privacy/ only. That page argues that the scanner sends
+ * nothing anywhere, and it is the page a reader opens devtools on to check.
+ * A stylesheet link to fonts.googleapis.com undercuts that before the argument
+ * starts: it is a third-party request on the page making the claim, and it
+ * hands the reader's IP address to Google to render the sentence telling them
+ * nothing is handed to anyone. The head of that page already says "a page that
+ * explains what a site does not send should not itself be sending anything";
+ * this is that sentence applied to its own <link> tags.
+ *
+ * The rest of the site still links Google Fonts, so the site-wide policy in
+ * netlify.toml still permits those origins. What makes this page's claim
+ * enforced rather than merely true is its own headers block, which drops both
+ * origins for /impact/privacy/ — see netlify.toml. Removing this file without
+ * removing that block does not degrade to Google Fonts; it renders in the
+ * fallback stack, which is the correct direction for a mistake to fail.
+ *
+ * Files are the variable woff2 Google serves for these families, one per
+ * subset, fetched once and committed. Variable means a single file spans the
+ * whole weight range the site uses, so four files replace the six static
+ * instances the old link pulled, at less total weight. Both families are
+ * OFL-1.1; redistribution is permitted and the licence travels with the fonts.
+ *
+ * latin-ext is not optional here. It carries the Lithuanian diacritics, and
+ * this is a Lithuanian company — dropping it to save 95 KB would break the
+ * company's own name in its own footer.
+ *
+ * font-display: swap matches what the Google CSS asked for: text paints
+ * immediately in the fallback and reflows once the face arrives, rather than
+ * holding the page blank on a font.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/css/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/css/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/css/fonts/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url('/css/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
