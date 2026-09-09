@@ -176,7 +176,7 @@ ${body}
       <div class="footer__col footer__col--brand">
         <span class="footer__logo">Clindar</span>
         <p class="footer__tagline">Clinical data, submission-ready.</p>
-        <p class="footer__desc">CDISC validation tools and biometrics consulting for CROs and small biotech.</p>
+        <p class="footer__desc">CDISC validation and submission-readiness infrastructure for CROs and biotech.</p>
       </div>
       <div class="footer__col">
         <h4 class="footer__col-heading">Product</h4>
