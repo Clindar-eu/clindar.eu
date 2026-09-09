@@ -13,7 +13,7 @@ Clindar builds CDISC validation and submission-readiness software for CROs and l
 ## What we build
 
 ### 🔍 CDISC Validator *(in development)*
-A web-based CDISC conformance validator for SDTM and ADaM datasets. Built to solve the real frustrations of day-to-day clinical data work:
+A web-based CDISC conformance validator for SDTM, ADaM, SEND and Define-XML. Built to solve the real frustrations of day-to-day clinical data work:
 
 - **Always-current rules** — conformance rules and CDISC Controlled Terminology update automatically, no manual downloads
 - **In-browser data viewer** — inspect the exact offending rows directly in the app, no SAS session required

@@ -450,7 +450,9 @@ body {
 
   .service-item:last-child:nth-child(odd) {
     grid-column: 1 / -1;
+    width: 100%;
     max-width: calc(50% - 0.5rem);
+    justify-self: center;
   }
 }
 
