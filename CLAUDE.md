@@ -6,7 +6,9 @@ This file is read automatically by Claude Code. It defines coding standards, des
 
 ## What is Clindar
 
-A CDISC validation tool and biometrics consulting service for small CROs and biotech companies. Target users: clinical data managers, statistical programmers, biotech teams preparing FDA/EMA submissions.
+Clindar is a clinical-data software company building accessible CDISC validation and submission-readiness infrastructure for CROs and lean biotech teams. Its core product is the Clindar Validator. Expert services provide focused support for CDISC delivery, audit and remediation, and submission programming and automation where specialist human judgement is required. Target users include clinical data managers, statistical programmers and biotech teams preparing FDA or EMA submissions.
+
+Treat Clindar as a product-led software company in all website copy and design decisions. Do not position it as a general CRO, FSP, staffing provider, full-service clinical data-management company or generic programming consultancy. Services should complement the Validator rather than compete with it for prominence.
 
 **Tagline:** Clinical data, submission-ready.
 
@@ -126,7 +128,7 @@ Include: EU hosting badge, GDPR note
 6. How it works — numbered steps (white)
 7. Testimonials (light slate)
 8. Mid-page CTA band (dark navy)
-9. Services — 2-col layout (white)
+9. Expert services — focused support around the Validator, 2-col layout (white)
 10. Final CTA (dark navy)
 11. Footer (dark navy)
 
