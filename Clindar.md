@@ -6,7 +6,7 @@
 
 **Clinical data, submission-ready.**
 
-Clindar builds tools and services for clinical data teams at CROs and small biotech companies — helping them move from raw trial data to clean, compliant, submission-ready datasets without the complexity of enterprise-priced software.
+Clindar builds CDISC validation and submission-readiness software for CROs and lean biotech teams — helping them move from raw trial data to clean, compliant, submission-ready datasets without enterprise-level complexity or cost.
 
 ---
 
@@ -42,12 +42,15 @@ Clindar is built on 15+ years of hands-on experience delivering CDISC-compliant 
 
 ## Services
 
-Alongside our software tools, Clindar provides hands-on biometrics consulting:
+### Expert support when software isn't enough
 
-- End-to-end CDISC submission packages (SDTM + ADaM + TLFs + Define-XML)
-- Clinical data management (DMP, EDC setup, edit checks, query management, DB lock)
-- Legacy dataset audit and CDISC remediation before agency inspections
-- Statistical programming support (SAS, R) for studies without in-house capacity
+Clindar combines modern validation software with specialist clinical-data expertise for the parts of submission readiness that still require human judgement.
+
+- **Submission Readiness & CDISC Delivery** — SDTM, ADaM, Define-XML and submission outputs prepared, reviewed and validated for FDA and EMA submission.
+- **CDISC Audit & Remediation** — Independent review, investigation and remediation of SDTM, ADaM and Define-XML before submission, inspection or transfer between vendors.
+- **Submission Programming & Automation** — Targeted SAS, R and Python expertise for CDISC transformations, validation workflows, submission outputs and repeatable clinical-data automation.
+
+> The software handles repeatable validation workflows; Clindar experts support complex remediation, submission preparation and specialised implementation where human judgement is valuable.
 
 ---
 
