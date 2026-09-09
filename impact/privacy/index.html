@@ -50,7 +50,7 @@
           reads, what it transmits, and how to confirm both from your own
           devtools without trusting a word of it.
         </p>
-        <p class="impact-pagehead__meta">Applies to <span class="impact-code">clindar.eu/scanner</span>. Last reviewed 31 August 2026.</p>
+        <p class="impact-pagehead__meta">Applies to <span class="impact-code">clindar.eu/scanner</span>. Last reviewed 9 September 2026.</p>
       </div>
     </section>
 
@@ -60,20 +60,26 @@
         <p class="impact-prose">
           The Define-XML you drop in is parsed by JavaScript running in your
           browser tab. It is not uploaded, not proxied, not queued, and not
-          logged. Two controls keep that true and they are different in kind: the
-          page's Content-Security-Policy stops the browser opening a connection
-          to any third-party origin, and the scanner's own code makes no request
-          containing your file, its contents, its name, a study identifier or a
-          result. The first your browser enforces whatever we do; the second is
-          a fact about source code, and the section below is how to watch it
-          rather than believe it.
+          logged. The scanner page is served with
+          <span class="impact-code">connect-src 'none'</span>, which means the
+          browser will not let it open a network connection to anywhere — not to
+          a third party, and not back to us either. There is no destination for
+          your file to go to. Your browser enforces that whatever we do, and the
+          section below is how to read it off the wire in ten seconds rather
+          than believe it.
         </p>
         <p class="impact-prose">
-          One thing can leave, and only if you type it: an email address, after
-          your score is on screen, if you join our rules-catalogue mailing list.
-          It goes to
+          Nothing you type on that page leaves it either, because there is
+          nothing to type: it has no form, no field and no account. If you want
+          the rules-catalogue mailing list, the scanner shows a link to a
+          separate page —
+          <a href="/impact/subscribe/">/impact/subscribe/</a> — and that page,
+          which is an ordinary page and says so, posts the address you enter to
           <span class="impact-code">/.netlify/functions/subscribe</span> on this
-          domain. Nothing about your scan goes with it.
+          domain. It is a different page under a different policy, you get there
+          by choosing to, and nothing about your scan travels with you: the link
+          carries no query string, and the page it opens has never seen a file
+          name, a study identifier or a result.
         </p>
         <p class="impact-prose">
           Your report does not travel either — in either direction. It is
@@ -122,59 +128,56 @@
           this Content-Security-Policy header:
         </p>
         <p class="impact-prose">
-          <span class="impact-code">default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'</span>
+          <span class="impact-code">default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'</span>
         </p>
         <p class="impact-prose">
-          <strong>connect-src 'self'</strong> is the directive that matters.
-          It means the page's JavaScript can open a network connection to
-          exactly one origin — this one — and to no other. Not to an analytics
-          service, not to a font host, not to a CDN, not to an error reporter.
+          <strong>connect-src 'none'</strong> is the directive that matters, and
+          <span class="impact-code">'none'</span> is the strongest value it has.
+          It means the page's JavaScript can open a network connection to no
+          origin at all: not to an analytics service, not to a font host, not to
+          a CDN, not to an error reporter — and not back to this domain either.
           A browser enforces this; it is not a setting the page can opt out of.
         </p>
         <p class="impact-prose">
-          <strong>And here is what it does not do.</strong> It does not stop the
-          page making a request to this origin.
-          <span class="impact-code">'self'</span> draws the boundary around
-          third parties, not around us. So the policy on its own is not the
-          reason your Define-XML stays in the tab: it rules out every
-          destination but one, and something else has to rule out that one. A
-          page that stopped explaining here would be overstating its case.
+          <strong>There is no remaining destination to reason about</strong>, and
+          that is the difference between
+          <span class="impact-code">'none'</span> and
+          <span class="impact-code">'self'</span>. This page used to say
+          something weaker, because the policy used to be weaker. It explained
+          that the header ruled out every destination except our own domain, and
+          that what kept your Define-XML out of that last one was the scanner's
+          own code, which builds no request. Both halves were true. Only one of
+          them could be checked from the wire; the other asked you to trust a
+          code review you had not done.
         </p>
         <p class="impact-prose">
-          <strong>Why that says 'self' and not 'none'.</strong>
-          <span class="impact-code">connect-src 'none'</span> is the stricter
-          directive — it permits no network connection at all, and it is what
-          this page would carry if the scanner did nothing but score your file.
-          It says <span class="impact-code">'self'</span> for one reason: the
-          mailing-list signup that appears under your score needs a request to
-          somewhere, and that somewhere is a path on this domain. We would
-          rather tell you that than quietly ship the weaker policy and keep
-          describing the stronger one.
+          <strong>What changed, and why.</strong> The only thing on the scanner
+          page that ever needed a destination was the mailing-list signup, and it
+          has moved to its own page at
+          <a href="/impact/subscribe/">/impact/subscribe/</a>. The scanner now
+          shows a plain link to it once a scan has finished, and a link is a
+          navigation rather than a connection — it costs the policy nothing. With
+          the form gone the page had nothing left to send, so the policy stopped
+          permitting anything. Your Define-XML now stays in that tab for exactly
+          the reason the page cannot reach an analytics service: there is nowhere
+          for it to go.
         </p>
         <p class="impact-prose">
-          <strong>What the code does with the destination that is left.</strong>
-          Nothing. The scanner's own JavaScript contains no
+          <strong>The code still builds no request either.</strong> The
+          scanner's own JavaScript contains no
           <span class="impact-code">fetch</span> call: it reads the file with
           the File API, parses it in a Worker bundled into its own assets, and
-          renders the result from memory. The only code on the page that makes a
-          request at all is the email widget, and the body of that request is the
-          address you typed — plus a hidden honeypot field, on the rare occasion
-          something automated fills one in. Your Define-XML is not in it. Neither
-          is its name, a study identifier, a score, a band or a rule id; none of
-          them is ever read into anything that could put them there.
-        </p>
-        <p class="impact-prose">
-          That is a statement about what the source code does, not about what a
-          header forbids, and the two deserve different amounts of trust. A
-          header you can read off the wire in ten seconds. Code you have to
-          watch — so the next section is five minutes of watching it, with
-          nothing taken on our word.
+          renders the result from memory. That is now a second lock on a door
+          the header has already welded shut, rather than the load-bearing half
+          of the claim — but it is still true, and the build enforces it. A
+          deploy whose scanner page names an endpoint fails instead of shipping,
+          which is what stops the form quietly coming back.
         </p>
         <p class="impact-prose">
           The same page also makes no third-party request of any kind — not a
-          script, not a stylesheet, not a font. The scanner's own JavaScript,
-          its stylesheet, the email capture widget and the typefaces you are
-          reading this in all come from this domain. Our marketing pages are
+          script, not a stylesheet, not a font. The scanner's own JavaScript, its
+          stylesheet, the signup link and the typefaces you are reading this in
+          all come from this domain. Our marketing pages are
           different: they use
           <a href="https://plausible.io/privacy" rel="noopener">Plausible</a>,
           a cookieless analytics service, and they load their fonts from Google.
@@ -200,7 +203,7 @@
             <strong>Read the policy.</strong> In the Network tab, reload, click
             the first document request, and look at the response headers. You
             should see <span class="impact-code">content-security-policy</span>
-            with <span class="impact-code">connect-src 'self'</span> in it. It
+            with <span class="impact-code">connect-src 'none'</span> in it. It
             is also repeated in a <span class="impact-code">&lt;meta&gt;</span>
             tag in the page source, which the browser enforces as well.
           </li>
@@ -215,36 +218,42 @@
             because the work happened in the tab.
           </li>
           <li>
-            <strong>Test the policy — then test the gap in it.</strong> In the
+            <strong>Test the policy, including against us.</strong> In the
             Console, run
             <span class="impact-code">fetch('https://example.com')</span>. The
             browser refuses it and says why: that is
-            <span class="impact-code">connect-src 'self'</span> closing off
+            <span class="impact-code">connect-src 'none'</span> closing off
             every third-party destination. Now run
-            <span class="impact-code">fetch('/impact/privacy/')</span>. That one
-            succeeds — same-origin requests are permitted, and any honest
-            reading of the policy has to say so. What keeps your Define-XML out
-            of a request to this origin is therefore not the header. It is that
-            the scanner holds no code that would build one, which is what the
-            step above let you watch.
+            <span class="impact-code">fetch('/impact/privacy/')</span> — a path
+            on our own domain, the friendliest possible destination. That is
+            refused too, with the same error. This is the step worth doing
+            slowly: it is the one that shows the policy is not merely pointed at
+            other people's servers. There is no destination we could send your
+            file to from that page, including one of ours.
           </li>
           <li>
-            <strong>Watch the one request that can happen.</strong> If you join
-            the mailing list, a single
+            <strong>Then look at the signup, which is a different page.</strong>
+            Click "Join the list" under your result and watch what the click
+            does: it is a navigation to
+            <span class="impact-code">/impact/subscribe/</span> with no query
+            string, and no request goes out before it. On that page — an
+            ordinary page, under the ordinary site policy — submitting the form
+            produces a single
             <span class="impact-code">POST</span> to
-            <span class="impact-code">/.netlify/functions/subscribe</span>
-            appears. Click it and read the request payload: it is
+            <span class="impact-code">/.netlify/functions/subscribe</span>.
+            Click it and read the request payload: it is
             <span class="impact-code">{"email":"…"}</span> and nothing else — no
-            file name, no study identifier, no score, no rule ids. It is the only
-            request the page can make after it has loaded, and it happens only
-            because you asked for it.
+            file name, no study identifier, no score, no rule ids. Nothing could
+            have carried them there; that page was never told a scan happened.
           </li>
           <li>
             <strong>Download the report and watch nothing happen.</strong> Click
             "Download HTML report". The file appears with no network request
             behind it, because the page built it from what was already in
             memory. That is the same fact from the other side: a document we
-            never receive is a document we cannot email you.
+            never receive is a document we cannot email you. Try every format —
+            HTML, Markdown, PDF, JSON, the Excel checklist. The network panel
+            stays empty for all of them.
           </li>
         </ol>
         <p class="impact-prose">

@@ -1,0 +1,83 @@
+/*
+ * Clindar scanner signup link.
+ *
+ * Same shape as the capture widget it replaced on this page — the panel a
+ * reader already recognises — but with a link where the field used to be.
+ *
+ * Reads the host page's tokens where they exist (--panel, --line, --ink,
+ * --muted, --accent; the scanner defines all five, in light and dark) and falls
+ * back to the site palette when they do not.
+ */
+
+.clindar-signup {
+  --cs-panel: var(--panel, #ffffff);
+  --cs-line: var(--line, #e5e7eb);
+  --cs-ink: var(--ink, #111827);
+  --cs-muted: var(--muted, #6b7280);
+  --cs-accent: var(--accent, #1d72e8);
+
+  margin: 32px 0 0;
+  padding: 24px;
+  background: var(--cs-panel);
+  border: 1px solid var(--cs-line);
+  border-left: 3px solid var(--cs-accent);
+  border-radius: 8px;
+  color: var(--cs-ink);
+  font-family: inherit;
+  max-width: 68ch;
+}
+
+.clindar-signup[hidden] {
+  display: none;
+}
+
+.clindar-signup__heading {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  text-transform: none;
+  color: var(--cs-ink);
+}
+
+.clindar-signup__body {
+  margin: 0 0 16px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--cs-muted);
+}
+
+.clindar-signup__action {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--cs-accent);
+  border: 1px solid var(--cs-accent);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.clindar-signup__action:hover {
+  opacity: 0.9;
+}
+
+.clindar-signup__action:focus-visible,
+.clindar-signup__link:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: 2px;
+}
+
+.clindar-signup__note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cs-muted);
+}
+
+.clindar-signup__link {
+  color: var(--cs-accent);
+}
