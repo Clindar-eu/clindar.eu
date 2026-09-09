@@ -16,15 +16,24 @@ was. This is the correction and the configuration it needs.
 
 1. **The scan.** `vendor/scanner/apps/web/src/App.tsx` parses the Define-XML in
    a worker, in the tab. After a scan with at least one parsed study it
-   dispatches `clindar:scored` on `document`.
+   dispatches `clindar:scanned` on `document`, carrying no detail. (It was
+   `clindar:scored` until the v4.1 report redesign; both names are still
+   listened for — see `docs/scanner-integration.md`.)
 2. **The report.** Also in the tab: `renderHtml`, `renderMarkdown` and
    `JSON.stringify` build the report from what is already in memory, and the
    "Download HTML report" / "Markdown" / "JSON" buttons hand it to the browser
    through a `Blob` URL. No network request is involved, and no copy of it
    exists anywhere but the reader's disk.
-3. **The widget.** `widget/scanner-capture.js` unhides on `clindar:scored`. It
-   reads nothing from the event — not the score, not the band, not a file name.
-4. **The POST.** On submit it sends exactly this to
+3. **The link.** `widget/scanner-signup-link.js` unhides on that event and
+   renders one anchor to `/impact/subscribe/`. It reads nothing from the event,
+   and the href is a bare path — no query string, no fragment, nothing about the
+   scan. The scanner page is served with `connect-src 'none'` and could not make
+   a request if it tried, which is why the form is not here; see
+   `docs/scanner-integration.md` for the whole argument.
+4. **The form.** `widget/scanner-capture.js` mounts on `/impact/subscribe/`,
+   visible immediately, under the ordinary site baseline where a same-origin
+   POST is permitted. That page has never seen a scan and has no way to.
+5. **The POST.** On submit it sends exactly this to
    `/.netlify/functions/subscribe`, same-origin, no cookies:
 
    ```json
@@ -33,18 +42,18 @@ was. This is the correction and the configuration it needs.
 
    The honeypot field `company` is added only if something filled it, which no
    human can.
-5. **The endpoint.** `netlify/functions/subscribe.js` rejects non-POST,
+6. **The endpoint.** `netlify/functions/subscribe.js` rejects non-POST,
    cross-origin, origin-less, non-JSON, oversized and malformed bodies; absorbs
    honeypot hits; rate-limits per caller; validates and normalises the address;
    and forwards it to one provider. Then it stops. It composes no email,
    renders no template, and holds nothing to personalise one with.
    `docs/subscribe-abuse-controls.md` has the threat model behind those guards,
    the Netlify configuration they depend on, and the bypasses that remain.
-6. **The log.** One aggregate line — event, provider, outcome, hour — and no
+7. **The log.** One aggregate line — event, provider, outcome, hour — and no
    address. `docs/data-handling.md` has the full field list, the optional
    `SUBSCRIBE_LOG_HMAC_KEY` pseudonym, and the retention checklist.
 
-**Step 2 never meets step 5.** That is the whole design, it is what
+**Step 2 never meets step 6.** That is the whole design, it is what
 `/impact/privacy/` promises a DPO, and requirement one of any future change here
 is that it stays true.
 
@@ -149,13 +158,17 @@ the only fact this process is in a position to know.
 ## Rules for changing any of this
 
 1. **The report is not emailed.** Sending it would mean transmitting scan
-   results, which `/impact/privacy/` promises never happens and
-   `connect-src 'self'` is there to bound.
-2. **Copy may only promise what a configured provider sends.** If you add an
+   results, which `/impact/privacy/` promises never happens and which the
+   scanner page's `connect-src 'none'` makes impossible from where the result
+   is.
+2. **The form does not move back to the scanner page.** One form there is what
+   forced that directive to `'self'` before, and the build fails if the built
+   scanner names an endpoint at all.
+3. **Copy may only promise what a configured provider sends.** If you add an
    offer, do the automation first and the words second.
-3. **A successful subscription is never described as a delivered email.** Not in
+4. **A successful subscription is never described as a delivered email.** Not in
    the widget, not in the privacy page, not in a response field name.
-4. **The privacy page changes in the same commit.** It invites a DPO to open
+5. **The privacy page changes in the same commit.** It invites a DPO to open
    devtools and check the payload. It has to keep surviving that.
 
 ## Running the tests

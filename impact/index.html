@@ -93,28 +93,30 @@
       <div class="impact-section__container impact-section__container--narrow">
         <h2 class="impact-section__title">The file does not leave your browser</h2>
         <p class="impact-prose">
-          Two separate controls hold that up, and which does what is worth
-          knowing. The first is the browser's. The scanner page is served with a
+          The browser is what holds that up, which is the kind of guarantee you
+          can check rather than accept. The scanner page is served with a
           Content-Security-Policy whose
           <span class="impact-code">connect-src</span> is
-          <span class="impact-code">'self'</span>, so the browser refuses any
-          connection to a third-party origin: no analytics service, no font
-          host, no error reporter, no CDN.
+          <span class="impact-code">'none'</span>, so the browser refuses the
+          page any network connection at all: no analytics service, no font
+          host, no error reporter, no CDN — and no path on this domain either.
+          There is no destination your Define-XML could be sent to.
         </p>
         <p class="impact-prose">
-          The second is the code, and it is needed because the first does not
-          cover everything. That policy still permits requests back to this
-          domain — so what keeps your Define-XML out of one is that the scanner
-          never builds one. Its own code calls
-          <span class="impact-code">fetch</span> nowhere, so scanning itself
-          makes no network request, and the requests that load it carry nothing
-          of yours: they are the same files every visitor gets.
+          The code agrees with the header, for whatever that is worth on top.
+          The scanner calls <span class="impact-code">fetch</span> nowhere, so
+          scanning itself makes no network request, and the requests that load
+          the page carry nothing of yours: they are the same files every visitor
+          gets.
         </p>
         <p class="impact-prose">
-          After that, one request can happen: the email address you type in, if
-          you join the catalogue mailing list once your score is on screen. It
-          goes to a path on this domain and carries the address and nothing
-          else.
+          There is a mailing list, and it is deliberately not on that page. Once
+          your result is up the scanner shows a link to
+          <a href="/impact/subscribe/">a separate signup page</a>; on that page,
+          and only if you submit the form there, one request can happen — the
+          email address, to a path on this domain, carrying the address and
+          nothing else. The link carries no query string, so nothing about your
+          scan follows you to it.
         </p>
         <p class="impact-prose">
           Your report is not emailed, because it is never ours to email. It is

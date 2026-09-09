@@ -63,7 +63,14 @@ if (!BASE_URL) {
  * several minutes to say it.
  */
 async function discoverPaths() {
-  const fallback = ['/', '/impact/', '/impact/privacy/', '/scanner/', '/catalogue/'];
+  const fallback = [
+    '/',
+    '/impact/',
+    '/impact/privacy/',
+    '/impact/subscribe/',
+    '/scanner/',
+    '/catalogue/',
+  ];
   const isRulePage = (path) => /^\/catalogue\/.+\//.test(path);
   try {
     const res = await fetch(new URL('/sitemap.xml', BASE_URL));
