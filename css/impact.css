@@ -251,23 +251,34 @@
   color: var(--color-text-muted);
 }
 
-/* ===== Rules catalogue =====
- *
- * Severity and basis colours are the scanner's own (--crit, --major, --minor,
- * --info in its stylesheet), repeated as literals here so a rule page and the
- * report that cites it grade the same finding the same colour.
- */
+/* ===== Rules catalogue ===== */
 
 .rule-table__scroll {
   overflow-x: auto;
 }
 
+/* The index is one table per category, and each would otherwise be sized from
+ * its own longest rule title — putting Basis and Detectability somewhere
+ * different in every section. `table-layout: fixed` makes the <colgroup> below
+ * authoritative instead, so the four columns line up down the whole page.
+ *
+ * min-width holds the fixed three plus a readable "What it finds" on a phone;
+ * .rule-table__scroll is what actually scrolls, so the page itself never does. */
 .rule-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9375rem;
-  min-width: 640px;
+  min-width: 720px;
+  table-layout: fixed;
 }
+
+/* Sized for the longest label each column can hold: "Needs verification" as a
+ * chip, and "External context required". "What it finds" is the one auto
+ * column, so it takes the remainder and wraps. */
+.rule-table__col--id     { width: 6.5rem; }
+.rule-table__col--what   { width: auto; }
+.rule-table__col--basis  { width: 11rem; }
+.rule-table__col--detect { width: 13rem; }
 
 .rule-table th {
   text-align: left;
@@ -285,6 +296,7 @@
   border-bottom: 1px solid var(--color-border);
   vertical-align: top;
   color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
 }
 
 .rule-table a {
@@ -309,7 +321,6 @@
 }
 
 .rule-table__detect {
-  white-space: nowrap;
   font-size: 0.875rem;
 }
 
@@ -324,11 +335,8 @@
   border: 1px solid currentColor;
 }
 
-.chip--severity-critical { color: #8f1d1d; }
-.chip--severity-major    { color: #9a3412; }
-.chip--severity-minor    { color: #8a5a00; }
-.chip--severity-info     { color: #475569; }
-
+/* Basis colours are the scanner's own, repeated as literals here so a rule page
+ * and the report that cites it grade the same finding the same colour. */
 .chip--confidence-confirmed          { color: #0f766e; }
 .chip--confidence-draft              { color: #8a5a00; }
 .chip--confidence-needs-verification { color: #9a3412; }
