@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join the rules-catalogue list — Clindar</title>
+  <meta name="description" content="The SDTMIG v4.0 change checklist and a note when a rule in the catalogue changes. An email address is all this page takes, and all it sends." />
+  <link rel="canonical" href="https://clindar.eu/impact/subscribe/" />
+  <link rel="preload" href="/css/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/css/fonts.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/impact.css" />
+  <link rel="stylesheet" href="/impact/subscribe/scanner-capture.css" />
+  <script src="/impact/subscribe/scanner-capture.js" defer></script>
+  <!-- WHY THIS PAGE EXISTS AT ALL.
+
+       This form used to be injected onto /scanner/, underneath the result. One
+       form was the entire reason that page had to be served with
+       `connect-src 'self'` rather than `'none'`: a page carrying a form needs
+       somewhere to post it, and a policy that permits one same-origin
+       destination permits every same-origin destination. So the scanner's
+       privacy claim had two halves — the header bounded where a request could
+       go, and the scanner's own source was what kept the Define-XML out of the
+       one place left — and only a code review settled the second.
+
+       Moving the form here collapses that to one half. The scanner page now
+       sends `connect-src 'none'` and can open no connection at all, which a
+       reader confirms from the response headers in one look. The cost is a
+       click, and the click is a plain link carrying nothing.
+
+       So this page must never learn anything about a scan. Nothing routes a
+       score, a file name, a study identifier, a category or a count into this
+       URL, and there is no query string or fragment for one to arrive in. What
+       the visitor typed is the whole of what this page has.
+
+       No analytics here, for the same reason the privacy page has none: this
+       is a page about an email address, and the fonts are self-hosted so it
+       makes no third-party request either. -->
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="navbar__container">
+      <a href="/" class="navbar__logo">Clindar</a>
+      <nav class="navbar__nav" aria-label="Main navigation">
+        <a href="/impact/" class="navbar__link">Impact Scanner</a>
+        <a href="/catalogue/" class="navbar__link">Rules catalogue</a>
+        <a href="/#services" class="navbar__link">Services</a>
+        <a href="/#contact" class="navbar__link">Contact</a>
+      </nav>
+      <a href="/scanner/" class="btn btn--primary navbar__cta">Open the scanner</a>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="impact-pagehead">
+      <div class="impact-pagehead__container">
+        <h1 class="impact-pagehead__title">Follow the v4.0 rules catalogue</h1>
+        <p class="impact-pagehead__lede">
+          The SDTMIG v4.0 change checklist, and a note when a rule in the
+          catalogue changes. It is the same checklist and the same note for
+          everyone on the list — nothing about your studies goes into it,
+          because nothing about your studies reaches us.
+        </p>
+        <p class="impact-pagehead__meta">An email address is all this page takes, and all it sends.</p>
+      </div>
+    </section>
+
+    <section class="impact-section">
+      <div class="impact-section__container impact-section__container--narrow">
+        <!-- The widget mounts here and, because of `open`, without waiting for a
+             scan it will never hear about. See widget/scanner-capture.js. -->
+        <div data-clindar-capture="open"></div>
+        <noscript>
+          <p class="impact-prose">
+            This form needs JavaScript to submit an address. If you would rather
+            not run any, mail <a href="mailto:info@clindar.eu">info@clindar.eu</a>
+            and ask to be added — it reaches the same list.
+          </p>
+        </noscript>
+      </div>
+    </section>
+
+    <section class="impact-section impact-section--slate">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">Two pages, two different answers</h2>
+        <p class="impact-prose">
+          The scanner and this form are deliberately not the same page, and they
+          are not governed by the same policy. It is worth being precise about
+          which one does what, because the difference is the whole reason for
+          the extra click.
+        </p>
+        <p class="impact-prose">
+          <strong>The scanner sends nothing, and cannot.</strong> It is served
+          with
+          <span class="impact-code">connect-src 'none'</span>, so the browser
+          permits it no connection at all — not to a third party, and not back
+          to this domain either. Your Define-XML is parsed in that tab and the
+          report is written in that tab. There is no destination for either to
+          go to, which is a fact you can read off the response headers rather
+          than take on trust.
+        </p>
+        <p class="impact-prose">
+          <strong>This page sends one thing, once, when you submit it.</strong>
+          A <span class="impact-code">POST</span> to
+          <span class="impact-code">/.netlify/functions/subscribe</span> on this
+          domain, carrying
+          <span class="impact-code">{"email":"…"}</span> and nothing else. It
+          happens because you pressed the button, and it does not happen before
+          then. Open the network panel and watch: nothing goes out while this
+          page is merely open.
+        </p>
+        <p class="impact-prose">
+          Nothing links the two. You arrived here by a link with no query
+          string, from a page that had nothing to put in one. This page has
+          never seen a file name, a study identifier or a result, so the address
+          you type cannot be joined to a scan by us or by anyone we send it to.
+        </p>
+        <p>
+          <a class="btn btn--secondary" href="/impact/privacy/">How to verify all of that</a>
+        </p>
+      </div>
+    </section>
+
+    <section class="impact-section">
+      <div class="impact-section__container impact-section__container--narrow">
+        <h2 class="impact-section__title">The report is not what this is for</h2>
+        <p class="impact-prose">
+          Your report is already yours, in the scanner, behind no form: HTML,
+          Markdown, PDF, JSON, or the checklist as an Excel workbook. We never
+          receive it, which is also why we cannot email it to you and do not
+          offer to. This list is the thing beside the report, not a gate in
+          front of it.
+        </p>
+        <p>
+          <a class="btn btn--primary" href="/scanner/">Open the scanner</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer__container">
+      <div class="footer__col footer__col--brand">
+        <span class="footer__logo">Clindar</span>
+        <p class="footer__tagline">Clinical data, submission-ready.</p>
+        <p class="footer__desc">CDISC validation and submission-readiness infrastructure for CROs and biotech.</p>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Product</h4>
+        <nav class="footer__nav" aria-label="Product links">
+          <a href="/scanner/" class="footer__link">SDTMIG v4.0 Impact Scanner</a>
+          <a href="/catalogue/" class="footer__link">Rules catalogue</a>
+          <a href="/#features" class="footer__link">CDISC Validator</a>
+        </nav>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Company</h4>
+        <nav class="footer__nav" aria-label="Company links">
+          <a href="/#services" class="footer__link">Services</a>
+          <a href="/#about" class="footer__link">About</a>
+          <a href="/#contact" class="footer__link">Contact</a>
+        </nav>
+      </div>
+      <div class="footer__col">
+        <h4 class="footer__col-heading">Legal &amp; Data</h4>
+        <p class="footer__legal-note">EU-hosted. The scanner uploads nothing: Define-XML is read in your browser.</p>
+        <a href="mailto:info@clindar.eu" class="footer__link">info@clindar.eu</a>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p class="footer__copy">&copy; 2026 Clindar. All rights reserved.</p>
+      <p class="footer__company">Clindar, UAB · Company code 308107046 · Laisvės pr. 78-11, LT-05263 Vilnius, Lithuania</p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -201,3 +201,77 @@ test('every quoted policy has to agree, not just the first', () => {
     /prints a policy the site does not send/,
   );
 });
+
+// ---------------------------------------------------------------------------
+// assertScannerReachesNothing
+//
+// The scanner page is served with `connect-src 'none'`, and the thing that
+// makes that sendable is that the page has nothing to send: the email capture
+// form moved to /impact/subscribe/. Undoing that is one line in build.mjs, and
+// the symptom is not a broken build — it is a form that renders, submits, and
+// fails in the console of whoever tried to use it.
+//
+// So the same rule as above: every test here is a build that must be REFUSED,
+// with the accepted ones present to stop the guard being "fixed" into failing
+// on everything.
+// ---------------------------------------------------------------------------
+
+const NONE = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'";
+
+const reach = (policy, files) =>
+  csp.assertScannerReachesNothing({ policy, scannerDir: scannerDir(files), log: quiet });
+
+test("a page naming the subscribe function stops a connect-src 'none' build", () => {
+  assert.throws(
+    () =>
+      reach(NONE, {
+        'assets/app.js': "var ENDPOINT = '/.netlify/functions/subscribe';",
+      }),
+    /connect-src 'none'/,
+  );
+});
+
+test("the capture widget copied back into the scanner stops the build", () => {
+  assert.throws(
+    () =>
+      reach(NONE, {
+        'index.html': '<html><head><script src="/scanner/scanner-capture.js"></script></head></html>',
+      }),
+    /capture widget/,
+  );
+});
+
+test('the failure names the file and says where the form went', () => {
+  try {
+    reach(NONE, { 'assets/app.js': "fetch('/.netlify/functions/subscribe')" });
+    assert.fail('the build was not stopped');
+  } catch (error) {
+    // The separator is the platform's, so the path is checked in two pieces
+    // rather than with a regex that only passes on one operating system.
+    assert.ok(error.message.includes('assets'), 'the failure does not name the directory');
+    assert.match(error.message, /app\.js/);
+    assert.match(error.message, /\/impact\/subscribe\//);
+  }
+});
+
+test("nothing is checked when the policy still permits 'self'", () => {
+  // The guard is scoped to the claim it protects. Under 'self' the endpoint is
+  // reachable by design, and failing on it would just be wrong.
+  reach(SELF, { 'assets/app.js': "var ENDPOINT = '/.netlify/functions/subscribe';" });
+});
+
+test('an endpoint named only in an HTML comment is not an endpoint', () => {
+  // The scanner's index.html explains this policy in prose. A guard that trips
+  // over the document explaining it is a guard that gets deleted.
+  reach(NONE, {
+    'index.html': '<html><!-- it used to post to /.netlify/functions/subscribe --><body></body></html>',
+  });
+});
+
+test('the page the scanner actually builds reaches nothing', () => {
+  reach(NONE, {
+    'index.html': '<html><head><script src="/scanner/assets/index.js"></script></head><body></body></html>',
+    'assets/index.js': 'const worker = new Worker(new URL("./scan.worker.js", import.meta.url));',
+    'scanner-signup-link.js': "var SIGNUP_URL = '/impact/subscribe/';",
+  });
+});

@@ -3,21 +3,27 @@
  *
  * Standalone: no framework, no build step, no dependencies. It is served from
  * the same origin as the page that mounts it, which is what lets it run under
- * the scanner's `script-src 'self'`.
+ * `script-src 'self'`.
  *
- * The contract it keeps, and the reason the privacy page can say what it says:
- * the only thing this widget ever sends is the address typed into its input.
- * The scanner's CSP is what stops a third-party origin being reachable; this
- * file is what stops the one reachable origin receiving anything of the
- * reader's. The second half is not enforced by anything but the code below.
- * It reads no scan result, no file name, no study identifier. The event that
- * reveals it may carry a score in `detail` — that is used to decide whether to
- * appear, and is never read into the request body.
+ * WHERE THIS RUNS, AND WHY IT MOVED. It mounts on /impact/subscribe/ and
+ * nowhere else. It used to be injected onto the scanner page, and that one form
+ * was the whole reason the scanner's policy had to read `connect-src 'self'`
+ * instead of `'none'`. Moving it here let the scanner page become a page with
+ * no reachable destination at all — a claim a reader settles from the response
+ * headers rather than from a code review. The scanner now shows a plain link to
+ * this page instead; see widget/scanner-signup-link.js.
+ *
+ * The consequence for this file is that it has no scan to be near. It never
+ * did have one in the request body, but it used to sit under a result on the
+ * same page, and the copy said so. Now the reader arrived by following a link
+ * that carried nothing, so there is nothing here to be careful with: no score,
+ * no file name, no study identifier, no query string to read. The only thing
+ * this page has is what the visitor types.
  *
  * WHAT IT OFFERS, AND WHY. Because it sends no scan context, nobody downstream
  * could write a personalised report even in principle — so it does not offer
- * one. The report is generated in this tab and downloaded from it, free and
- * ungated. What the form buys is a mailing list: the SDTMIG v4.0 change
+ * one. The report is generated in the scanner tab and downloaded from it, free
+ * and ungated. What the form buys is a mailing list: the SDTMIG v4.0 change
  * checklist and catalogue updates, which are the same for every subscriber and
  * need nothing about your study to produce.
  *
@@ -32,25 +38,31 @@
   'use strict';
 
   var ENDPOINT = '/.netlify/functions/subscribe';
-  var SHOW_EVENT = 'clindar:scored';
+  // Kept for a host that embeds this beside a result of its own. On
+  // /impact/subscribe/ no scan happens and none of these ever fire — that page
+  // marks its container `open` instead. Both names are listened for because the
+  // scanner renamed the event in the v4.1 redesign and a listener that silently
+  // never fires is the failure this integration has already had once.
+  var SHOW_EVENTS = ['clindar:scanned', 'clindar:scored'];
   var RESET_EVENT = 'clindar:reset';
   var PRIVACY_URL = '/impact/privacy/';
 
   var COPY = {
     heading: 'Follow the v4.0 rules catalogue',
     body:
-      'The full report is already yours — download it as HTML, Markdown or JSON ' +
-      'from the study detail on this page. This is the mailing list beside it: ' +
-      'the SDTMIG v4.0 change checklist, and a note when a rule in the ' +
-      'catalogue changes.',
+      'The report is already yours, in the scanner — download it there as HTML, ' +
+      'Markdown, PDF, JSON or an Excel checklist, free and behind no form. This ' +
+      'is the mailing list beside it: the SDTMIG v4.0 change checklist, and a ' +
+      'note when a rule in the catalogue changes.',
     label: 'Work email',
     submit: 'Join the list',
     sending: 'Adding…',
     done: 'Added to the list.',
     doneBody:
       'Your address is with our email provider now, and everything it sends ' +
-      'carries an unsubscribe link. Nothing about this scan went with it — the ' +
-      'report stays here, on this page.',
+      'carries an unsubscribe link. Nothing about any scan went with it, because ' +
+      'this page never had it: the scanner runs in its own tab, under a policy ' +
+      'that lets it reach nothing at all.',
     // Shown when the endpoint reports that no provider was contacted. It is a
     // misconfiguration notice, not a confirmation, and it is deliberately the
     // opposite of reassuring: nothing was stored and nothing will arrive.
@@ -59,7 +71,9 @@
       'This deploy has no email provider configured, so the address was ' +
       'discarded and no email will arrive. Set ESP_PROVIDER before anyone sees ' +
       'this. A configured deploy never shows this message.',
-    note: 'Your Define-XML never left this browser. Only the address above does.',
+    note:
+      'Your Define-XML never left your browser — the scanner page can open no ' +
+      'connection at all. This page sends the address above, and nothing else.',
     privacy: 'How to verify that',
     errors: {
       invalid_email: 'That address does not look right. Check it and try again.',
@@ -255,10 +269,12 @@
   var scored = false;
   var handles = [];
 
-  document.addEventListener(SHOW_EVENT, function () {
-    scored = true;
-    for (var i = 0; i < handles.length; i++) handles[i].show();
-  });
+  for (var e = 0; e < SHOW_EVENTS.length; e++) {
+    document.addEventListener(SHOW_EVENTS[e], function () {
+      scored = true;
+      for (var i = 0; i < handles.length; i++) handles[i].show();
+    });
+  }
 
   document.addEventListener(RESET_EVENT, function () {
     scored = false;
@@ -266,9 +282,16 @@
   });
 
   /**
-   * Mount the widget into a container. It stays hidden until a `clindar:scored`
-   * event has reached the document, so it cannot appear before a score is on
-   * screen — which is the whole shape of the funnel and not a detail to invert.
+   * Mount the widget into a container.
+   *
+   * By default it stays hidden until a scan has been announced to the document,
+   * so that a host embedding it beside a result cannot show it before the
+   * result — which is the shape of the funnel and not a detail to invert.
+   *
+   * `options.open` mounts it visible. That is for a page which IS the signup —
+   * /impact/subscribe/, where the visitor arrived by clicking "Join the list"
+   * and a form they have to wait for would be a page that does nothing. It is
+   * not a way to put an ungated form in front of a result.
    */
   function mount(target, options) {
     var container = resolve(target);
@@ -294,7 +317,7 @@
     };
 
     handles.push(handle);
-    if (scored) handle.show();
+    if (scored || instance.options.open) handle.show();
     return handle;
   }
 
@@ -312,7 +335,10 @@
   function autoMount() {
     var container = document.querySelector('[data-clindar-capture]');
     if (!container) return false;
-    return mount(container, {}) !== null;
+    // `data-clindar-capture="open"` is the signup page saying it is the
+    // destination rather than a panel beside a result.
+    var open = container.getAttribute('data-clindar-capture') === 'open';
+    return mount(container, { open: open }) !== null;
   }
 
   function watchForContainer() {

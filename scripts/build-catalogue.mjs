@@ -2,9 +2,9 @@
  * Renders the rules catalogue as browsable static pages: an index and one page
  * per rule, under /catalogue/.
  *
- * This is the SEO surface and the credibility artefact. Every number the
+ * This is the SEO surface and the credibility artefact. Every finding the
  * scanner puts on screen comes from one of these rules, so a sceptical reader
- * can go and read the rule rather than take the score on trust. The prose is
+ * can go and read the rule rather than take the result on trust. The prose is
  * reproduced exactly as the catalogue writes it — `whatChanges` and
  * `remediation` are the asset, and a paraphrase would be a second, worse
  * catalogue that nobody maintains.
@@ -28,21 +28,20 @@ const SITE_ORIGIN = 'https://clindar.eu';
 // What gets published, and what does not.
 //
 // Published: everything a reader needs to check our work — the classification,
-// the prose, the sources, and the effort model.
-//
-// The effort numbers are published WITH the three assumptions that decide what
-// they mean, because base-plus-per-finding hours read cold are a price list
-// rather than evidence: setup is charged once and not per finding, a rule in an
-// effortGroup does not charge setup again for a workstream another rule in the
-// group already paid for, and programme-scoped hours land once per organisation
-// rather than once per study. Anyone reconstructing a total from these pages
-// should be able to get the same number the scanner does.
+// the prose, and the sources.
 //
 // Not published: `evidence` and `select`, which are the engine's templates and
 // predicates rather than statements about the standard; and `serviceHook`,
 // which is a pitch. These pages are here to be checked, and a reader working
-// through what a rule costs them should reach the sources without an offer in
-// the way.
+// through a rule should reach the sources without an offer in the way.
+//
+// GONE, AND NOT TO BE REINSTATED HERE: `severity`, `effort`, `effortGroup`,
+// `supersedes`, `requires` and `reportOnce`. Rules 0.15.1 deleted the whole
+// score/severity/effort model from the governed catalogue and the scanner's
+// own build refuses a catalogue that carries any of the six. A generator that
+// still reads one of them cannot fail loudly — it renders `undefined` onto a
+// public page — so this file reads only fields the governed model still
+// defines.
 
 const CATEGORY_LABELS = {
   structural: 'Structural',
@@ -68,13 +67,6 @@ const CATEGORY_ORDER = [
   'define-xml',
   'process',
 ];
-
-const SEVERITY_LABELS = {
-  critical: 'Critical',
-  major: 'Major',
-  minor: 'Minor',
-  info: 'Informational',
-};
 
 const CONFIDENCE_LABELS = {
   confirmed: 'Confirmed',
@@ -120,6 +112,27 @@ const FINDING_TYPE_LABELS = {
   heuristic: 'Heuristic',
   process: 'Process',
 };
+
+/**
+ * One column sizing for every category table on the index.
+ *
+ * The index is nine separate tables, one per category, and a browser sizes each
+ * one independently from its own contents. Left to itself that puts Basis and
+ * Detectability at nine different horizontal positions down the page, so the
+ * eye has to re-find the columns at every heading. A shared <colgroup> plus
+ * `table-layout: fixed` (see .rule-table in css/impact.css) makes the widths a
+ * property of the page rather than of whichever rule titles happen to be
+ * longest in a section.
+ *
+ * "What it finds" is the one auto column, so it takes whatever is left and
+ * wraps; the other three are sized for their longest label and stay put.
+ */
+const RULE_TABLE_COLGROUP = `            <colgroup>
+              <col class="rule-table__col--id" />
+              <col class="rule-table__col--what" />
+              <col class="rule-table__col--basis" />
+              <col class="rule-table__col--detect" />
+            </colgroup>`;
 
 function escapeHtml(value) {
   return String(value)
@@ -212,107 +225,6 @@ ${body}
 `;
 }
 
-/** "2 hours", "1 hour", "0.25 hours" — never "2.00". */
-function hours(value) {
-  const n = Number(value);
-  const text = Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
-  return `${text} ${n === 1 ? 'hour' : 'hours'}`;
-}
-
-/**
- * The effort model, with the assumptions that decide what the numbers mean.
- *
- * Published because a reader who can see the rule and the sources should be
- * able to see what we think it costs and argue with it. Every line here says
- * how the number is applied, not just what it is: setup once rather than per
- * finding, waived where another rule in the same workstream already charged it,
- * and programme work landing once per organisation rather than once per study.
- */
-function renderEffort(rule, catalogue) {
-  const effort = rule.effort;
-  if (!effort) return '';
-
-  const programme = effort.scope === 'programme';
-  const rows = [];
-
-  const free = effort.baseHours === 0 && effort.perFindingHours === 0;
-
-  if (free) {
-    rows.push([
-      'Estimated hours',
-      'None. This rule reports something worth knowing rather than work to do, so it adds nothing to the estimate.',
-    ]);
-  } else {
-    if (effort.baseHours > 0) {
-      rows.push([
-        effort.perFindingHours > 0 ? 'Setup' : 'Fixed',
-        `${escapeHtml(hours(effort.baseHours))} <span class="fact-note">Charged once ${
-          programme ? 'per organisation' : 'per study'
-        } if the rule fires at all, however many times it fires.</span>`,
-      ]);
-    }
-    if (effort.perFindingHours > 0) {
-      rows.push([
-        'Per finding',
-        `${escapeHtml(hours(effort.perFindingHours))} <span class="fact-note">Added for every dataset or variable the rule fires on.</span>`,
-      ]);
-    }
-    if (effort.maxHours !== undefined) {
-      rows.push([
-        'Capped at',
-        `${escapeHtml(hours(effort.maxHours))} <span class="fact-note">A ceiling, so an unusually large study does not produce an unusable number.</span>`,
-      ]);
-    }
-  }
-
-  // Whose budget nothing lands in is not a useful row.
-  if (!free) rows.push([
-    'Budget',
-    programme
-      ? 'Programme <span class="fact-note">Work that comes with adopting v4.0 at all. It happens once however many studies convert, and is never multiplied across a portfolio.</span>'
-      : 'Study <span class="fact-note">Work caused by this study’s own metadata, and incurred again for every study that carries it.</span>',
-  ]);
-
-  // Without this, two rules in one workstream read as two setups.
-  const group = rule.effortGroup
-    ? catalogue.rules
-        .filter((r) => r.effortGroup === rule.effortGroup && r.id !== rule.id)
-        .map((r) => r.id)
-    : [];
-
-  if (group.length) {
-    rows.push([
-      'Shared setup',
-      `With ${group.map((id) => `<a href="${rulePath(id)}">${escapeHtml(id)}</a>`).join(', ')}
-        <span class="fact-note">These describe one piece of work approached from different
-        directions, so the setup above is charged once between them rather than by each. Per-finding
-        hours still apply to each, because those scale with what is actually converted.</span>`,
-    ]);
-  }
-
-  const body = rows
-    .map(
-      ([term, value]) => `          <div>
-            <dt>${term}</dt>
-            <dd>${value}</dd>
-          </div>`,
-    )
-    .join('\n');
-
-  // "What it costs to fix", not "What it costs": the severity row a few lines
-  // above says severity is what it costs to MISS this, and two headings a
-  // screen apart should not both read "what it costs".
-  return `        <h2 class="impact-section__title">What it costs to fix</h2>
-        <p class="impact-prose">
-          Planning numbers, not a quotation. They are what this rule contributes
-          to the range the scanner reports for a study, and they assume someone
-          who knows the datasets is doing the work.
-        </p>
-        <dl class="impact-facts">
-${body}
-        </dl>`;
-}
-
 function chip(kind, value, text) {
   return `<span class="chip chip--${escapeHtml(kind)}-${escapeHtml(value)}">${escapeHtml(text)}</span>`;
 }
@@ -347,7 +259,6 @@ function renderIndex(catalogue) {
           (rule) => `            <tr>
               <td class="rule-table__id"><a href="${rulePath(rule.id)}">${escapeHtml(rule.id)}</a></td>
               <td><a href="${rulePath(rule.id)}">${escapeHtml(rule.title)}</a></td>
-              <td>${chip('severity', rule.severity, label(SEVERITY_LABELS, rule.severity))}</td>
               <td>${chip('confidence', rule.confidence, label(CONFIDENCE_LABELS, rule.confidence))}</td>
               <td class="rule-table__detect">${escapeHtml(label(DETECTABILITY_LABELS, rule.detectability))}</td>
             </tr>`,
@@ -361,11 +272,11 @@ function renderIndex(catalogue) {
           <h2 class="impact-section__title">${escapeHtml(label(CATEGORY_LABELS, category))}</h2>
           <div class="rule-table__scroll">
           <table class="rule-table">
+${RULE_TABLE_COLGROUP}
             <thead>
               <tr>
                 <th scope="col">Rule</th>
                 <th scope="col">What it finds</th>
-                <th scope="col">Severity</th>
                 <th scope="col">Basis</th>
                 <th scope="col">Detectability</th>
               </tr>
@@ -387,7 +298,7 @@ ${rows}
           Every finding the impact scanner reports comes from one of these
           ${rules.length} rules. Each one states what v4.0 changes, what to do
           about it, how conclusively Define-XML alone can detect it, and the
-          specification text it rests on. Read the rule; do not take the score
+          specification text it rests on. Read the rule; do not take the result
           on trust.
         </p>
         <p class="impact-pagehead__meta">
@@ -426,10 +337,6 @@ function renderRule(rule, catalogue, index) {
   const facts = [
     ['Rule', escapeHtml(rule.id)],
     ['Category', escapeHtml(label(CATEGORY_LABELS, rule.category))],
-    [
-      'Severity',
-      `${chip('severity', rule.severity, label(SEVERITY_LABELS, rule.severity))} <span class="fact-note">What it costs to miss this, not what it costs to fix it.</span>`,
-    ],
     [
       'Basis',
       `${chip('confidence', rule.confidence, label(CONFIDENCE_LABELS, rule.confidence))} <span class="fact-note">${escapeHtml(
@@ -503,8 +410,6 @@ ${factRows}
 
         <h2 class="impact-section__title">What to do about it</h2>
         <p class="impact-prose">${escapeHtml(rule.remediation)}</p>
-
-${renderEffort(rule, catalogue)}
 
 ${detectabilityNote}
       </div>

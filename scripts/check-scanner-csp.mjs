@@ -121,6 +121,68 @@ export function assertScannerStylesMatchPolicy({ policy, scannerDir, log = conso
 }
 
 /**
+ * Fail if the policy permits no connection and the built scanner names one.
+ *
+ * `connect-src 'none'` is the scanner's whole privacy claim in one directive,
+ * and it is a claim the browser will keep whatever the bundle says: a fetch to
+ * a named endpoint under this policy is refused, not honoured. So the risk this
+ * guards is not exfiltration — it is a page that has quietly acquired a feature
+ * which now fails in the console of every visitor who uses it, on the one page
+ * that promises a clean network panel.
+ *
+ * That is exactly how the email capture widget behaved before it moved to
+ * /impact/subscribe/: it was copied into dist/scanner/ by this build, and one
+ * same-origin POST was the entire reason the policy read 'self'. If a future
+ * edit puts it back, or adds anything else that names an endpoint, the build
+ * stops here rather than shipping a form that cannot submit.
+ *
+ * Named destinations only, and deliberately so. A blanket search for `fetch(`
+ * would fail on Vite's module-preload polyfill, which is present in every build
+ * and reaches nothing — and a check that cries wolf on correct code does not
+ * survive its second build. What this looks for is a URL somebody wrote.
+ */
+export function assertScannerReachesNothing({ policy, scannerDir, log = console.log }) {
+  const sources = cspDirective(policy, 'connect-src') ?? [];
+  if (!(sources.length === 1 && sources[0] === "'none'")) {
+    log(`  connect-src permits ${sources.join(' ') || 'nothing declared'}; nothing to check`);
+    return;
+  }
+
+  const NAMED_DESTINATION = [
+    ['the subscribe function', /\/\.netlify\/functions\//],
+    ['the capture widget, which posts to it', /scanner-capture\.(js|css)/],
+  ];
+
+  const found = [];
+  for (const file of filesUnder(scannerDir)) {
+    if (!/\.(html|js|css)$/.test(file)) continue;
+
+    // Comments come out of the HTML first, for the same reason as above: the
+    // scanner's index.html explains this policy in prose, and a check that
+    // trips over the document explaining it is a check that gets deleted.
+    const text = readFileSync(file, 'utf8');
+    const subject = file.endsWith('.html') ? text.replace(/<!--[\s\S]*?-->/g, '') : text;
+
+    for (const [what, re] of NAMED_DESTINATION) {
+      const hit = subject.match(re);
+      if (hit) found.push(`${file}: ${what} (${JSON.stringify(hit[0])})`);
+    }
+  }
+
+  if (found.length > 0) {
+    throw new Error(
+      "the scanner policy sets connect-src 'none', so the page can open no connection " +
+        'at all, but the built page names one:\n  ' +
+        found.join('\n  ') +
+        '\nMove whatever needs it to a page that is allowed one — /impact/subscribe/ is ' +
+        'where the mailing-list form went, and why. Reopening this directive changes what ' +
+        '/impact/privacy/ can tell a DPO, so it is a product decision and not a build fix.',
+    );
+  }
+  log("  connect-src 'none': the built scanner names no endpoint");
+}
+
+/**
  * Fail if /impact/privacy/ prints a policy the site does not send.
  *
  * That page quotes the scanner's CSP verbatim and then reasons about it in front

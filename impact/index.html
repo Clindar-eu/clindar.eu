@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SDTMIG v4.0 Impact Scanner — Clindar</title>
-  <meta name="description" content="Open the scanner and add a Define-XML to see which of your studies break when you move to SDTMIG v4.0, which datasets and variables are affected, and roughly what it costs to fix. Runs in your browser; the file is never uploaded." />
+  <meta name="description" content="Open the scanner and add a Define-XML to see what changes when your studies move to SDTMIG v4.0, which datasets and variables are affected, and which rule and specification text each finding rests on. Runs in your browser; the file is never uploaded." />
   <link rel="canonical" href="https://clindar.eu/impact/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,11 +33,11 @@
 
   <main>
 
-    <!-- Above the fold: the question, then the way in. Nothing else, and no
-         sign-up — the score is free and asking first would be the wrong trade. -->
+    <!-- Above the fold: what the reading is, then the way in. Nothing else, and no
+         sign-up — the reading is free and asking first would be the wrong trade. -->
     <section class="impact-hero">
       <div class="impact-hero__container">
-        <h1 class="impact-hero__title">Which of your studies break when you move to SDTMIG&nbsp;v4.0?</h1>
+        <h1 class="impact-hero__title">See what changes when your studies move to SDTMIG&nbsp;v4.0</h1>
 
         <!-- Nothing here accepts a file, so nothing here may look as though it
              does. This block once had a dashed border and an upload arrow, and
@@ -45,14 +45,14 @@
              concluded the scanner was broken. The reading happens one screen
              away, and `from="dropzone"` is kept only so the funnel still joins
              up across the rename. -->
-        <p class="impact-hero__lead">See what changes for your studies</p>
+        <p class="impact-hero__lead">A per-study reading of what v4.0 changes, from your Define-XML</p>
         <p class="impact-hero__sub">Open the scanner, then select or drop in one or more Define-XML files.</p>
 
         <a class="btn btn--primary" href="/scanner/" data-plausible-event="Scanner opened" data-plausible-from="dropzone">Open the scanner</a>
 
         <p class="impact-hero__note">
           Files are processed locally in your browser and never uploaded. No
-          account, no sign-up, no cost to see the number.
+          account, no sign-up, no cost to see the result.
         </p>
       </div>
     </section>
@@ -78,11 +78,12 @@
             </p>
           </article>
           <article class="impact-card">
-            <h3 class="impact-card__title">An effort estimate you can argue with</h3>
+            <h3 class="impact-card__title">Findings you can check, one by one</h3>
             <p class="impact-card__body">
-              Indicative hours per study, plus the programme-level work that is
-              done once rather than per study. Traceable to the rule that
-              produced it, so you can push back on any line of it.
+              Every finding names the dataset or variable it was read from, says
+              what v4.0 changes about it, and states how far Define-XML alone
+              can settle it. Each one links to the rule it came from, so you can
+              read the specification text behind it and disagree with it.
             </p>
           </article>
         </div>
@@ -93,28 +94,30 @@
       <div class="impact-section__container impact-section__container--narrow">
         <h2 class="impact-section__title">The file does not leave your browser</h2>
         <p class="impact-prose">
-          Two separate controls hold that up, and which does what is worth
-          knowing. The first is the browser's. The scanner page is served with a
+          The browser is what holds that up, which is the kind of guarantee you
+          can check rather than accept. The scanner page is served with a
           Content-Security-Policy whose
           <span class="impact-code">connect-src</span> is
-          <span class="impact-code">'self'</span>, so the browser refuses any
-          connection to a third-party origin: no analytics service, no font
-          host, no error reporter, no CDN.
+          <span class="impact-code">'none'</span>, so the browser refuses the
+          page any network connection at all: no analytics service, no font
+          host, no error reporter, no CDN — and no path on this domain either.
+          There is no destination your Define-XML could be sent to.
         </p>
         <p class="impact-prose">
-          The second is the code, and it is needed because the first does not
-          cover everything. That policy still permits requests back to this
-          domain — so what keeps your Define-XML out of one is that the scanner
-          never builds one. Its own code calls
-          <span class="impact-code">fetch</span> nowhere, so scanning itself
-          makes no network request, and the requests that load it carry nothing
-          of yours: they are the same files every visitor gets.
+          The code agrees with the header, for whatever that is worth on top.
+          The scanner calls <span class="impact-code">fetch</span> nowhere, so
+          scanning itself makes no network request, and the requests that load
+          the page carry nothing of yours: they are the same files every visitor
+          gets.
         </p>
         <p class="impact-prose">
-          After that, one request can happen: the email address you type in, if
-          you join the catalogue mailing list once your score is on screen. It
-          goes to a path on this domain and carries the address and nothing
-          else.
+          There is a mailing list, and it is deliberately not on that page. Once
+          your result is up the scanner shows a link to
+          <a href="/impact/subscribe/">a separate signup page</a>; on that page,
+          and only if you submit the form there, one request can happen — the
+          email address, to a path on this domain, carrying the address and
+          nothing else. The link carries no query string, so nothing about your
+          scan follows you to it.
         </p>
         <p class="impact-prose">
           Your report is not emailed, because it is never ours to email. It is

@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { buildCatalogue } from './build-catalogue.mjs';
 import {
   assertPrivacyPageShowsPolicy,
+  assertScannerReachesNothing,
   assertScannerStylesMatchPolicy,
 } from './check-scanner-csp.mjs';
 
@@ -40,9 +41,20 @@ const SITE_ORIGIN = 'https://clindar.eu';
 // Add new public files here as they are created.
 const PUBLIC_ENTRIES = ['index.html', 'css', 'js', 'images', 'impact'];
 
-// Copied into dist/scanner/ rather than served from the site root: the widget
-// only ever runs on the scanner page, and it must be same-origin with it.
-const WIDGET_ENTRIES = ['scanner-capture.js', 'scanner-capture.css'];
+// Copied into dist/scanner/ rather than served from the site root: it only ever
+// runs on the scanner page and must be same-origin with it, because that page
+// permits script from nowhere else.
+//
+// This used to be the email capture widget. It is now a link to the page that
+// carries the form, because a form needs somewhere to post it and the scanner
+// page is served with `connect-src 'none'` — see the /scanner/* block in
+// netlify.toml for the whole argument.
+const SCANNER_ENTRIES = ['scanner-signup-link.js', 'scanner-signup-link.css'];
+
+// The capture widget itself, copied beside the page that mounts it. That page
+// is under /impact/, where the site baseline permits the one same-origin POST
+// the form needs.
+const SUBSCRIBE_ENTRIES = ['scanner-capture.js', 'scanner-capture.css'];
 
 // Run through a shell: npm is a .cmd shim on Windows, which recent Node
 // refuses to spawn directly. Every command below is a fixed string with no
@@ -78,21 +90,21 @@ const CSP_META_RE = new RegExp(
 );
 
 /**
- * Load the capture widget from the scanner's HTML.
+ * Load the signup link from the scanner's HTML.
  *
  * Injected here rather than committed upstream because the URLs are
  * /scanner/-absolute: they are a fact about how this site serves the build, not
- * about the scanner. The scanner's own dev server simply has no widget, which
- * is the right answer for it. What upstream does need is the container element
- * and the scored event — see docs/scanner-integration.md.
+ * about the scanner. The scanner's own dev server simply has no link, which is
+ * the right answer for it. What upstream does need is the container element and
+ * the scanned event — see docs/scanner-integration.md.
  */
-function linkWidget(htmlPath) {
+function linkSignupLink(htmlPath) {
   const html = readFileSync(htmlPath, 'utf8');
-  if (html.includes('scanner-capture.js')) return;
+  if (html.includes('scanner-signup-link.js')) return;
 
   const tags =
-    '    <link rel="stylesheet" href="/scanner/scanner-capture.css" />\n' +
-    '    <script src="/scanner/scanner-capture.js" defer></script>\n';
+    '    <link rel="stylesheet" href="/scanner/scanner-signup-link.css" />\n' +
+    '    <script src="/scanner/scanner-signup-link.js" defer></script>\n';
 
   const closing = html.match(/([ \t]*)<\/head>/i);
   if (!closing) throw new Error(`no </head> in ${htmlPath}`);
@@ -281,23 +293,35 @@ if (!existsSync(join(scannerDist, 'index.html'))) {
 }
 cpSync(scannerDist, join(dist, 'scanner'), { recursive: true });
 
-// The capture widget lives in this repo, not in the scanner: it is the site's
-// funnel, it changes on the site's schedule, and keeping it here is what lets
-// the scanner stay a thing that only reads files. It is copied in beside the
-// scanner's own assets so it loads under script-src 'self'.
-step('copy capture widget into dist/scanner');
-for (const entry of WIDGET_ENTRIES) {
+// The funnel lives in this repo, not in the scanner: it changes on the site's
+// schedule, and keeping it here is what lets the scanner stay a thing that only
+// reads files. Both halves are copied in beside the page that mounts them, so
+// each loads under that page's own script-src 'self'.
+step('copy signup link into dist/scanner');
+for (const entry of SCANNER_ENTRIES) {
   const from = join(root, 'widget', entry);
   if (!existsSync(from)) throw new Error(`missing widget file: ${entry}`);
   cpSync(from, join(dist, 'scanner', entry));
   console.log(`  ${entry}`);
 }
-linkWidget(join(dist, 'scanner', 'index.html'));
+linkSignupLink(join(dist, 'scanner', 'index.html'));
+
+// The form itself, beside the page that mounts it. The <link> and <script> tags
+// are authored in impact/subscribe/index.html rather than injected: that page is
+// ours, so there is nothing to discover about it at build time.
+step('copy capture widget into dist/impact/subscribe');
+for (const entry of SUBSCRIBE_ENTRIES) {
+  const from = join(root, 'widget', entry);
+  if (!existsSync(from)) throw new Error(`missing widget file: ${entry}`);
+  cpSync(from, join(dist, 'impact', 'subscribe', entry));
+  console.log(`  ${entry}`);
+}
 
 step('scanner CSP from netlify.toml');
 const scannerCsp = scannerCspFromNetlifyToml();
 applyScannerCsp(join(dist, 'scanner', 'index.html'), scannerCsp);
 assertScannerStylesMatchPolicy({ policy: scannerCsp, scannerDir: join(dist, 'scanner') });
+assertScannerReachesNothing({ policy: scannerCsp, scannerDir: join(dist, 'scanner') });
 assertPrivacyPageShowsPolicy({
   policy: scannerCsp,
   privacyPage: join(dist, 'impact', 'privacy', 'index.html'),
@@ -312,7 +336,14 @@ console.log(`  ${catalogue.ruleCount} rules from catalogue ${catalogue.version}`
 // The catalogue is only an SEO surface if it can be found. Fifty pages behind
 // one index link is exactly the shape a crawler is slowest to walk on its own.
 step('sitemap');
-writeSitemap(['/', '/impact/', '/impact/privacy/', '/scanner/', ...catalogue.paths]);
+writeSitemap([
+  '/',
+  '/impact/',
+  '/impact/privacy/',
+  '/impact/subscribe/',
+  '/scanner/',
+  ...catalogue.paths,
+]);
 
 // Last, over the finished artefact: everything above has had its turn to write.
 step('secret scan');

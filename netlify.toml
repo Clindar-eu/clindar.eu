@@ -83,16 +83,35 @@
   [headers.values]
     Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'"
 
-# The scanner. With connect-src 'self' the browser blocks every third-party
-# destination, so the only endpoint this page's JavaScript can address is a path
-# on this domain, and the only path that accepts anything is the subscribe
-# function, which takes an email address.
+# The scanner. connect-src is 'none': this page can open no connection at all,
+# to a third-party origin or to this one. That is the strongest form the
+# directive has, and it is the minimum apps/web/index.html in the scanner repo
+# asks every host serving that build to send.
 #
-# What that does NOT do is forbid a same-origin request. The header bounds the
-# destinations to one; it is the scanner's own code — which calls fetch nowhere
-# — that keeps the Define-XML out of the one that remains. Both halves are
-# load-bearing, and /impact/privacy/ says so in those terms rather than crediting
-# the policy with the whole thing.
+# It is sendable here only because the scanner page no longer has anything to
+# send. The mailing-list form used to be injected onto this page and posted an
+# address to /.netlify/functions/subscribe, and that one endpoint is the whole
+# reason this directive read 'self' until now. The form now lives on its own
+# page at /impact/subscribe/, under the marketing baseline above, and the
+# scanner links to it after a scan the way it links to anything else. A link is
+# a navigation, not a connection, so it costs this policy nothing.
+#
+# What that buys is a claim with no second half to explain. Under 'self' the
+# header bounded the destinations to one and the scanner's own code — which
+# calls fetch nowhere — was what kept the Define-XML out of the one that
+# remained; both halves were load-bearing and /impact/privacy/ had to say so in
+# those terms. Under 'none' the header is sufficient on its own: there is no
+# reachable destination for a request to have. The code half is still true and
+# still checked, it is simply no longer the only thing standing between a
+# Define-XML and the wire, and a reader no longer has to take source code on
+# trust to believe the first half.
+#
+# Nothing may be added to this page that needs a connection. Analytics, RUM,
+# error reporting, a log drain, and any Function or Edge Function called from
+# the page are all excluded by this one directive, and that exclusion is the
+# product rather than an accident of configuration. A feature that needs any of
+# them is a decision to reopen this line and to rewrite what /impact/privacy/
+# tells a DPO — it should cost an edit here and read as such in the diff.
 #
 # 'unsafe-inline' is deliberately absent from style-src. Every rule the scanner
 # page uses is in a same-origin stylesheet — Vite emits one file and links it,
@@ -112,14 +131,15 @@
 # that preview gets its own document and its own policy — not this directive
 # reopened for every visitor to buy a preview nobody asked for.
 #
-# The policy half is still a product claim and not a hardening detail: 'self' is
-# exactly as far as this may ever be relaxed, and this string is also the source
-# the build copies into the scanner's own <meta> tag (see scripts/build.mjs).
+# The policy is a product claim and not a hardening detail: 'none' is what the
+# scanner's own index.html asks for and what /impact/privacy/ prints, and this
+# string is also the source the build copies into the scanner's <meta> tag and
+# checks the built page against (see scripts/build.mjs).
 [[headers]]
   for = "/scanner/*"
 
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
